@@ -27,3 +27,18 @@ test('a background pause cannot accidentally flood the paper', () => {
   const squeeze = new SqueezeStroke(engine, { x: 70, y: 80 }, [1, .2, .1], 0);
   squeeze.advance(60_000); assert.ok(engine.totalMass() < 54);
 });
+
+test('paint emerges progressively; a quick tap commits its full quantity exactly once', () => {
+  const engine = new PaintEngine(140, 180);
+  const squeeze = new SqueezeStroke(engine, { x: 70, y: 80 }, [1, .2, .1], 0);
+  assert.ok(Math.abs(engine.totalMass() - 3) < .001);
+  squeeze.advance(40);
+  assert.ok(engine.totalMass() < 30);
+  squeeze.finish(40);
+  assert.ok(Math.abs(engine.totalMass() - 39.2) < .002);
+  const mass = engine.totalMass(); squeeze.finish(40);
+  assert.equal(engine.totalMass(), mass);
+  squeeze.move({ x: 90, y: 80 }); squeeze.advance(200); squeeze.finish(300);
+  assert.equal(engine.totalMass(), mass);
+  assert.equal(squeeze.output.dispensing, false);
+});

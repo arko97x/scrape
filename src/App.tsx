@@ -7,6 +7,9 @@ import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
 import { Squeegee, Tube } from './tools';
 import { bladePaint, type BladePaintBand } from './blade-paint';
+import { DispensingTube, type DispensingTubeHandle } from './DispensingTube';
+import { DISPENSE_RELEASE_MS } from './dispense-motion';
+import { squeegeeAnchor, squeegeeWidthScale } from './squeegee-geometry';
 
 const W = 480, H = 600;
 const colours = [
@@ -23,6 +26,11 @@ export function App() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const runtime = useRef<Runtime | null>(null);
   const gesture = useRef<Gesture | null>(null);
+  const dispensingTube = useRef<DispensingTubeHandle>(null);
+  const wetColours = useRef(new Set<string>());
+  const releaseUntil = useRef(0);
+  const hideAfterRelease = useRef(false);
+  const hoverPoint = useRef<Point | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const selected = useRef<'paint' | 'scrape'>('paint');
   const colour = useRef(colours[0].hex);
@@ -73,7 +81,13 @@ export function App() {
     };
     const observer = new ResizeObserver(resize); observer.observe(canvas.current); resize();
     const tick = (now: number) => {
-      gesture.current?.squeeze?.advance(now); renderer.render();
+      const squeeze = gesture.current?.squeeze;
+      squeeze?.advance(now); renderer.render();
+      dispensingTube.current?.advance(now, squeeze?.output);
+      if (releaseUntil.current && now >= releaseUntil.current) {
+        releaseUntil.current = 0;
+        setCursor(hideAfterRelease.current ? null : hoverPoint.current);
+      }
       if (!stopped) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -83,7 +97,8 @@ export function App() {
       setReady(true); refresh();
     }).catch(() => { if (!stopped) { setStorageWarning(true); setReady(true); } });
     const interrupt = () => {
-      if (gesture.current) { gesture.current.squeeze?.advance(performance.now()); engine.endScrape(); gesture.current = null; setContact(false); refresh(); persist(); }
+      if (gesture.current) { gesture.current.squeeze?.finish(performance.now()); engine.endScrape(); gesture.current = null; setContact(false); refresh(); persist(); }
+      dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null);
     };
     const onVisibility = () => { if (document.hidden) interrupt(); };
     window.addEventListener('blur', interrupt); document.addEventListener('visibilitychange', onVisibility);
@@ -94,14 +109,19 @@ export function App() {
     };
   }, []);
 
-  const selectPaint = (hex: string) => { if (gesture.current) return; selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); };
-  const selectScraper = () => { if (gesture.current) return; selected.current = 'scrape'; setTool('scrape'); };
+  const cancelRelease = () => {
+    dispensingTube.current?.cancel(); releaseUntil.current = 0;
+    if (hideAfterRelease.current) setCursor(null);
+  };
+  const selectPaint = (hex: string) => { if (gesture.current) return; cancelRelease(); selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); };
+  const selectScraper = () => { if (gesture.current) return; cancelRelease(); selected.current = 'scrape'; setTool('scrape'); };
   const changeBlade = (width: number, rotation: number) => {
     const current = runtime.current; if (!current || gesture.current) return;
     current.history.checkpoint(); current.engine.setBlade(width, rotation); refresh(); persist();
   };
   const historyAction = (action: 'undo' | 'redo') => {
     const current = runtime.current; if (!current || gesture.current) return;
+    cancelRelease();
     current.history[action](); refresh(); persist();
   };
   useEffect(() => {
@@ -111,7 +131,7 @@ export function App() {
       else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); historyAction('redo'); }
       else if (event.key.toLowerCase() === 's') selectScraper();
       else if (event.key.toLowerCase() === 'p') selectPaint(colour.current);
-      else if (event.key === 'Escape') { setCursor(null); canvas.current?.blur(); }
+      else if (event.key === 'Escape') { dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); }
     };
     window.addEventListener('keydown', keyboard); return () => window.removeEventListener('keydown', keyboard);
   }, [ready]);
@@ -125,8 +145,10 @@ export function App() {
     if (!current || !ready || gesture.current || event.button !== 0) return;
     event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
     const point = pointFrom(event.clientX, event.clientY);
+    releaseUntil.current = 0; hideAfterRelease.current = false; hoverPoint.current = point;
     current.history.checkpoint(); setContact(true); setCursor(point);
     if (selected.current === 'paint') {
+      wetColours.current.add(colour.current);
       const squeeze = new SqueezeStroke(current.engine, point, rgb(colour.current), performance.now());
       squeeze.flow = event.pointerType === 'pen' && event.pressure > 0 ? .5 + event.pressure * 1.5 : 1;
       gesture.current = { pointerId: event.pointerId, squeeze };
@@ -136,7 +158,8 @@ export function App() {
   const pointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const current = runtime.current; if (!current) return;
     const point = pointFrom(event.clientX, event.clientY);
-    if (event.pointerType !== 'touch' || gesture.current) setCursor(point);
+    hoverPoint.current = point;
+    if ((event.pointerType !== 'touch' || gesture.current) && performance.now() >= releaseUntil.current) setCursor(point);
     const active = gesture.current; if (!active || active.pointerId !== event.pointerId) return;
     const samples = event.nativeEvent.getCoalescedEvents?.() || [];
     for (const sample of samples.length ? samples : [event.nativeEvent]) {
@@ -151,10 +174,23 @@ export function App() {
     if (!active || !current || active.pointerId !== event.pointerId) return;
     if (event.type === 'pointerup') {
       const point = pointFrom(event.clientX, event.clientY);
-      if (active.squeeze) { active.squeeze.move(point); active.squeeze.advance(performance.now()); } else current.engine.scrape(point);
+      if (active.squeeze) { active.squeeze.move(point); active.squeeze.finish(performance.now()); } else current.engine.scrape(point);
+    } else {
+      active.squeeze?.finish(performance.now());
+    }
+    const now = performance.now();
+    if (active.squeeze && event.type === 'pointerup') {
+      dispensingTube.current?.advance(now, active.squeeze.output);
+      dispensingTube.current?.release(now);
+      releaseUntil.current = now + DISPENSE_RELEASE_MS;
+      hideAfterRelease.current = event.pointerType === 'touch' || !hoverPoint.current || hoverPoint.current.x < 0 || hoverPoint.current.y < 0 || hoverPoint.current.x > W || hoverPoint.current.y > H;
+      // Keep the filament attached to the last deposit while the mouse moves
+      // away. Restore the live cursor once that connection has broken.
+    } else {
+      dispensingTube.current?.cancel(); releaseUntil.current = 0;
+      if (event.pointerType === 'touch') setCursor(null);
     }
     current.engine.endScrape(); gesture.current = null; setContact(false);
-    if (event.pointerType === 'touch') setCursor(null);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     refresh(); persist();
   };
@@ -179,7 +215,7 @@ export function App() {
           <button className="icon-button" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled={!historyState.undo || contact || !ready} onClick={() => historyAction('undo')}><Undo2 className="ui-icon" aria-hidden="true"/></button>
           <button className="icon-button" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled={!historyState.redo || contact || !ready} onClick={() => historyAction('redo')}><Redo2 className="ui-icon" aria-hidden="true"/></button>
         </div>
-        <button className="new-sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
+        <button className="new-sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
         <button className="export-button" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/>{exporting ? 'Exporting…' : 'Keep this one'}</button>
       </div>
     </header>
@@ -188,25 +224,25 @@ export function App() {
       <aside className="paint-tray" aria-label="Paint colours">
         <div className="tray-heading"><span className="eyebrow">01 / COLOUR</span><h1>A handful<br/>of possibility.</h1></div>
         <div className="tubes">
-          {colours.map((item, index) => <button key={item.hex} className={`tube-button ${tool === 'paint' && paint === item.hex ? 'selected' : ''}`} style={{ '--tube-angle': `${[-8, 5, -4, 7, -6, 4][index]}deg` } as React.CSSProperties} aria-label={`Use ${item.name} paint`} aria-pressed={tool === 'paint' && paint === item.hex} disabled={!ready || contact} onClick={() => selectPaint(item.hex)}>
-            <Tube colour={item.hex} label={item.name.toUpperCase()}/><span className="tube-name">{item.name}</span>
+          {colours.map((item, index) => <button key={item.hex} className={`tube-button ${tool === 'paint' && paint === item.hex ? 'selected' : ''}`} style={{ '--tube-angle': `${[-6, 4, -3, 5, -5, 3][index]}deg`, '--tube-colour': item.hex } as React.CSSProperties} aria-label={`Use ${item.name} paint`} aria-pressed={tool === 'paint' && paint === item.hex} disabled={!ready || contact} onClick={() => selectPaint(item.hex)}>
+            <Tube colour={item.hex}/><span className="tube-name"><i aria-hidden="true"/>{item.name}</span>
           </button>)}
         </div>
-        <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Mix your own</span><input type="color" aria-label="Mix a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><ArrowUpRight className="ui-icon" aria-hidden="true"/></label>
+        <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Custom colour</span><input type="color" aria-label="Choose a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><ArrowUpRight className="ui-icon" aria-hidden="true"/></label>
       </aside>
 
       <div className="paper-area">
         <div className={`paper-host ${ready ? 'ready' : ''}`}>
-          <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the squeegee and drag to scrape." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) setCursor(null); }}/></div>
+          <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the squeegee and drag to scrape." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
           {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
-          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100}%` : undefined, '--blade-angle': `${angle}deg` } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint}/> : <Tube colour={paint} small/>}</div>}
+          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working"/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
       </div>
 
       <aside className="tool-tray" aria-label="Scraping tools">
-        <button className={`squeegee-button ${tool === 'scrape' ? 'selected' : ''}`} aria-label="Pick up squeegee" aria-pressed={tool === 'scrape'} disabled={!ready || contact} onClick={selectScraper}><Squeegee paint={carriedPaint}/><span>The squeegee</span><small>pick it up & pull</small></button>
+        <button className={`squeegee-button ${tool === 'scrape' ? 'selected' : ''}`} aria-label="Pick up scraper card" aria-pressed={tool === 'scrape'} disabled={!ready || contact} onClick={selectScraper}><Squeegee paint={carriedPaint}/><span>The scraper</span><small>pick it up & pull</small></button>
         <div className="blade-controls">
           <label htmlFor="blade-width">Blade width <span>{Math.round(bladeWidth / W * 100)}%</span></label>
           <input id="blade-width" type="range" min="50" max="180" step="10" value={bladeWidth} disabled={!ready || contact} onChange={event => changeBlade(Number(event.target.value), angle)}/>

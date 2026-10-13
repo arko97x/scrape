@@ -1,39 +1,78 @@
 import { useId } from 'react';
 import type { BladePaintBand } from './blade-paint';
+import { squeegeeGeometry } from './squeegee-geometry';
 
-export function Tube({ colour, label, small = false }: { colour: string; label?: string; small?: boolean }) {
-  const id = useId().replace(/:/g, '');
-  return <svg viewBox="0 0 72 158" className={`tube-art ${small ? 'small' : ''}`} aria-hidden="true">
-    <defs>
-      <linearGradient id={`${id}-metal`} x1="0" x2="1"><stop stopColor="#c9c8bd"/><stop offset=".23" stopColor="#faf9ee"/><stop offset=".72" stopColor="#e7e5da"/><stop offset="1" stopColor="#b9b9b0"/></linearGradient>
-      <linearGradient id={`${id}-band`} x1="0" x2="1"><stop stopColor="#000" stopOpacity=".17"/><stop offset=".45" stopColor="#fff" stopOpacity=".1"/><stop offset="1" stopColor="#000" stopOpacity=".12"/></linearGradient>
-    </defs>
-    <path d="M14 20 Q13 15 19 15 L53 15 Q59 15 58 21 L57 101 Q54 116 44 127 L44 138 L28 138 L28 127 Q16 117 15 102Z" fill={`url(#${id}-metal)`} stroke="#777b70" strokeWidth="1.1"/>
-    <path d="M15 47 L57 47 L57 103 Q55 111 50 116 L23 116 Q17 110 15 103Z" fill={colour}/>
-    <path d="M15 47 L57 47 L57 103 Q55 111 50 116 L23 116 Q17 110 15 103Z" fill={`url(#${id}-band)`}/>
-    <path d="M15 19 L57 19 M15 23 L57 23 M18 28 L54 28" stroke="#929487" strokeWidth="1" opacity=".7"/>
-    <path d="M19 32 L20 99 M53 32 L52 104" stroke="#fff" strokeWidth="1.2" opacity=".55"/>
-    <path d="M18 108 L24 112 M52 117 L45 120 M21 119 L29 124" stroke="#96968a" strokeWidth="1" opacity=".6"/>
-    <rect x="28" y="134" width="16" height="8" rx="2" fill="#d9d8ca" stroke="#898d7d"/>
-    <path d="M30 142 L42 142 L40 150 L32 150Z" fill="#e1dfd2" stroke="#898d7d"/>
-    <ellipse cx="36" cy="150" rx="4" ry="1.4" fill={colour}/>
-    {!small && <><text x="36" y="38" textAnchor="middle" fill="#39483e" fontSize="7" fontFamily="Georgia" fontStyle="italic">scrape</text><rect x="20" y="61" width="32" height="29" fill="#f7f3e8" opacity=".94"/><text x="36" y="73" textAnchor="middle" fill="#39483e" fontSize="5.5" fontFamily="sans-serif" letterSpacing=".5">COLOUR</text><text x="36" y="83" textAnchor="middle" fill="#39483e" fontSize="5.5" fontFamily="sans-serif">{label || 'STUDIO'}</text></>}
-  </svg>;
+// One photographic atlas keeps the overhead camera and upper-left light
+// consistent. Each crop puts the exposed nozzle at (100, 494), including
+// the applicator, whose extrusion connects that nozzle to the deposit point.
+const tubeSprites: Record<string, { tipX: number; bottom: number }> = {
+  '#e5b84e': { tipX: 311, bottom: 489 },
+  '#c55c43': { tipX: 615, bottom: 489 },
+  '#d99092': { tipX: 918, bottom: 489 },
+  '#649295': { tipX: 1226, bottom: 491 },
+  '#7a8963': { tipX: 310, bottom: 1003 },
+  '#344c5a': { tipX: 616, bottom: 1001 },
+};
+const customTube = { tipX: 917, bottom: 1001 };
+
+export function TubeArtwork({ colour }: { colour: string }) {
+  const sprite = tubeSprites[colour.toLowerCase()] ?? customTube;
+  const custom = sprite === customTube;
+  const x = 100 - sprite.tipX;
+  const y = 494 - sprite.bottom;
+  return <>
+    <image href="/tools/paint-tubes-overhead.png" width="1536" height="1024" x={x} y={y}/>
+    {custom && <path d={`M${843 + x} ${717 + y} Q${861 + x} ${712 + y} ${881 + x} ${716 + y} L${923 + x} ${718 + y} Q${958 + x} ${713 + y} ${994 + x} ${720 + y} L${994 + x} ${794 + y} Q${963 + x} ${791 + y} ${936 + x} ${795 + y} L${877 + x} ${791 + y} L${845 + x} ${795 + y}Z`} fill={colour} style={{ mixBlendMode: 'multiply' }}/>}
+  </>;
 }
 
-export function Squeegee({ paint = [] }: { paint?: BladePaintBand[] }) {
+export function Tube({ colour, small = false }: { colour: string; small?: boolean }) {
+  return <svg viewBox="0 0 200 500" className={`tube-art ${small ? 'small' : ''}`} aria-hidden="true" focusable="false" style={{ isolation: 'isolate' }}><TubeArtwork colour={colour}/></svg>;
+}
+
+export function Squeegee({ paint = [], pose = 'resting' }: { paint?: BladePaintBand[]; pose?: 'resting' | 'working' }) {
   const id = useId().replace(/:/g, '');
-  return <svg viewBox="0 0 240 145" className="squeegee-art" aria-hidden="true">
-    <defs><linearGradient id={`${id}-handle`} x1="0" x2="1"><stop stopColor="#ba644e"/><stop offset=".45" stopColor="#df967b"/><stop offset="1" stopColor="#b76851"/></linearGradient></defs>
-    <path d="M106 99 L108 23 Q108 12 120 12 Q132 12 132 23 L134 99Z" fill={`url(#${id}-handle)`} stroke="#824e3d" strokeWidth="1.5"/>
-    <path d="M114 26 L114 76" stroke="#f2bf9a" strokeWidth="2" opacity=".5"/>
-    <circle cx="120" cy="24" r="3" fill="#704d3c"/>
-    <path d="M12 96 L228 96 L224 119 L16 119Z" fill="#c8d0b9" stroke="#64745e" strokeWidth="1.5"/>
-    <path d="M21 101 L219 101" stroke="#e6eadb" strokeWidth="3"/>
-    <path d="M13 119 L227 119 L229 125 L11 125Z" fill="#394b3e" stroke="#273c2f"/>
-    {paint.map(band => <rect key={band.from} x={13 + band.from * 214} y="120" width={(band.to - band.from) * 214} height="4" fill={band.colour} opacity={band.opacity}/>)}
-    <path d="M83 97 L103 71 L107 95 M157 97 L137 71 L133 95" fill="#b9c1aa" stroke="#64745e"/>
-    <circle cx="120" cy="108" r="4" fill="#71806b"/><path d="M118 108 L122 108" stroke="#e1e6d4"/>
+  const { width, height, bladeLeft, bladeRight, contactY, edgeThickness } = squeegeeGeometry;
+  const bladeWidth = bladeRight - bladeLeft;
+  const working = pose === 'working';
+  return <svg viewBox={`0 0 ${width} ${height}`} className={`squeegee-art${working ? ' working-card' : ''}`} data-pose={pose} aria-hidden="true" focusable="false">
+    <defs>
+      <clipPath id={`${id}-lip`}>{working ? <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} rx="8"/> : <path d={`M${bladeLeft} ${contactY - 80} L${bladeRight} ${contactY - 80} L${bladeRight} ${contactY} L${bladeLeft} ${contactY}Z`}/>}</clipPath>
+      <linearGradient id={`${id}-rubber-edge`} x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#c39827"/><stop offset=".18" stopColor="#f4d169"/><stop offset=".38" stopColor="#e4bc4a"/><stop offset=".76" stopColor="#d6ac37"/><stop offset="1" stopColor="#98751f"/>
+      </linearGradient>
+      <linearGradient id={`${id}-edge-light`}>
+        <stop stopColor="#fff3bc" stopOpacity=".6"/><stop offset=".65" stopColor="#fff3bc" stopOpacity=".18"/><stop offset="1" stopColor="#fff3bc" stopOpacity="0"/>
+      </linearGradient>
+      <filter id={`${id}-rubber-grain`} x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency=".4" numOctaves="2" seed="7"/>
+        <feColorMatrix type="saturate" values="0"/>
+        <feComponentTransfer><feFuncA type="linear" slope=".1"/></feComponentTransfer>
+        <feComposite in2="SourceGraphic" operator="in"/>
+      </filter>
+      <linearGradient id={`${id}-wet`} x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#fff" stopOpacity=".04"/><stop offset=".22" stopColor="#fff" stopOpacity=".28"/><stop offset=".5" stopColor="#fff" stopOpacity=".05"/><stop offset="1" stopColor="#000" stopOpacity=".28"/>
+      </linearGradient>
+    </defs>
+    {working ? <g data-profile="perpendicular-overhead" clipPath={`url(#${id}-lip)`}>
+      <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} fill={`url(#${id}-rubber-edge)`}/>
+      <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} filter={`url(#${id}-rubber-grain)`}/>
+      <path d={`M${bladeLeft + 12} ${contactY + 4}H${bladeRight - 12}`} stroke={`url(#${id}-edge-light)`} strokeWidth="2" strokeLinecap="round"/>
+    </g> : <image href="/tools/rubber-card-overhead.png" width={width} height={height}/>}
+    {/* Carried paint sits on the lower face, hidden while the card is upright.
+        Laying it down in the tray reveals that stained face. */}
+    {!working && <g clipPath={`url(#${id}-lip)`}>
+      {paint.map(band => {
+        const x = bladeLeft + band.from * bladeWidth;
+        const w = (band.to - band.from) * bladeWidth;
+        const h = 12 + band.opacity * 28;
+        const y = contactY - h;
+        return <g key={band.from} opacity={band.opacity}>
+          <rect data-paint-band="" x={x} y={y} width={w} height={h} fill={band.colour}/>
+          <path d={`M${x} ${y}H${x + w}V${y + h}H${x}Z`} fill={`url(#${id}-wet)`}/>
+        </g>;
+      })}
+    </g>}
   </svg>;
 }
 

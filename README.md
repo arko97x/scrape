@@ -11,6 +11,14 @@ Open the Local address Vite prints. For tablets on the same Wi-Fi, use its Netwo
 
 The studio is at `/`. A repeatable animated swipe inspired by the acrylic references is at `/reference.html`. The study uses the same engine and renderer as the studio and doesn't alter the saved studio painting.
 
+The picked-up tube visibly squeezes paint through its nozzle into the mound or
+drawn bead. Its short connection stretches and pinches off on release, leaving
+a small residue. The opening squeeze arrives progressively over 100 ms; taps
+still deliver their full paint quantity. Reduced motion keeps the flow cue
+without tube compression or the travelling highlight. A frame-by-frame check
+and repeatable squeeze/drag live at `/tests/fixtures/dispense-check.html`; they do
+not load or save the studio painting.
+
 ## Checks
 
 ```sh
