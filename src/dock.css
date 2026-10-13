@@ -23,12 +23,14 @@
 /* Tools give up width first on very narrow screens, so the icons always fit. */
 .dock-tool { position: relative; width: 76px; min-width: 44px; height: 54px; border-radius: var(--ui-radius); flex-shrink: 1; padding: 0; }
 .dock-tool.dock-scrape { width: 100px; }
-.dock-tool::before { content: ''; position: absolute; inset: calc(2px - var(--tab-rise)) 2px 2px; border-radius: var(--ui-radius); background: #e2e7d9; opacity: 0; clip-path: inset(var(--tab-rise) 0 0 round var(--ui-radius)); transition: opacity 125ms var(--ease-out), clip-path 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }
+.dock-tool::before { content: ''; position: absolute; inset: calc(2px - var(--tab-rise)) 2px calc(-1 * var(--tab-drop)); border-radius: var(--ui-radius) var(--ui-radius) 0 0; background: #e2e7d9; opacity: 0; clip-path: inset(var(--tab-rise) 0 calc(var(--tab-drop) + 2px) round var(--ui-radius)); transition: opacity 125ms var(--ease-out), clip-path 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }
 .dock-tool[aria-pressed=true]::before { opacity: 1; }
 /* With settings tucked away, the armed tool's highlight rises out of the bar
-   as a tab carrying its name. Opening settings folds it back into the bar. */
-.studio-dock { --tab-rise: 30px; }
-.studio-dock[data-settings=closed] .dock-tool[aria-pressed=true]::before { clip-path: inset(0 round var(--ui-radius)); box-shadow: inset 0 0 0 1px #cdd5c3, 0 -2px 8px #26322712; }
+   as a tab carrying its name, running down to the bar's bottom edge. Opening
+   settings folds it back into the bar. --tab-drop covers the bar's bottom
+   padding and border below the button. */
+.studio-dock { --tab-rise: 30px; --tab-drop: calc(5px + env(safe-area-inset-bottom, 0px)); }
+.studio-dock[data-settings=closed] .dock-tool[aria-pressed=true]::before { clip-path: inset(0 round var(--ui-radius) var(--ui-radius) 0 0); box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3, 0 -2px 8px #26322712; }
 .dock-tool-name { position: absolute; left: 0; right: 0; top: calc(6px - var(--tab-rise)); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .2px; color: #344b39; text-align: center; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-out), transform 180ms var(--ease-out); }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true] .dock-tool-name { opacity: 1; transform: translateY(0); transition-delay: 40ms; }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true] .dock-tip { bottom: calc(100% + 12px + var(--tab-rise)); }
