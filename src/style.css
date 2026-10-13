@@ -46,17 +46,19 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .hand-note span { position: absolute; right: -5px; top: 3px; font-size: 32px; }
 .hand-note .ui-icon { width: 32px; height: 32px; }
 .paper-area { min-width: 0; display: flex; align-items: center; flex-direction: column; }
-.paper-host { position: relative; width: min(100%, calc((100dvh - 265px) * .8)); aspect-ratio: 4 / 5; box-shadow: 2px 5px 5px #50463313, 6px 20px 36px #50463312, 0 1px 2px #50463338; background: #f5f1e5; }
-.painting { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.paper-host { position: relative; width: min(100%, calc((100dvh - 265px) * .8)); aspect-ratio: 4 / 5; }
+.paper-surface { position: absolute; inset: 0; filter: drop-shadow(2px 5px 5px #50463313) drop-shadow(6px 20px 18px #50463312) drop-shadow(0 1px 1px #50463338); }
+.painting { display: block; width: 100%; height: 100%; background: #f5f1e5; clip-path: var(--paper-edge); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .paper-host.ready .painting { cursor: none; }
-.painting:focus-visible { outline: 2px solid #78846d; outline-offset: 12px; }
+.painting:focus-visible { outline: none; }
+.paper-host:has(.painting:focus-visible) { outline: 2px solid #78846d; outline-offset: 12px; }
 .border-tape { pointer-events: none; position: absolute; z-index: 2; background: #d7d4a7; opacity: .74; background-image: repeating-linear-gradient(5deg, transparent 0 2px, #fff2 2px 3px), repeating-linear-gradient(90deg, #a19e7405 0 3px, transparent 3px 8px); box-shadow: 0 1px 2px #6d684317; }
-.tape-top, .tape-bottom { left: -2.5%; width: 105%; height: 6%; clip-path: polygon(0 4%, 1% 0, 99% 3%, 100% 12%, 99.4% 35%, 100% 50%, 99.4% 65%, 100% 92%, 0 100%, .5% 72%, 0 50%, .4% 23%); }
-.tape-top { top: -2.4%; transform: rotate(-.3deg); }
-.tape-bottom { bottom: -2.4%; transform: rotate(.25deg); }
-.tape-left, .tape-right { top: -2.5%; height: 105%; width: 7.5%; clip-path: polygon(2% 0, 25% .4%, 49% 0, 76% .3%, 98% 0, 100% 99%, 68% 100%, 45% 99.5%, 0 100%); }
-.tape-left { left: -3%; transform: rotate(.2deg); }
-.tape-right { right: -3%; transform: rotate(-.25deg); }
+.tape-top, .tape-bottom { left: -2.5%; width: 105%; height: 6%; }
+.tape-top { top: -2.4%; left: -5.5%; width: 110.5%; transform: rotate(-.3deg); }
+.tape-bottom { bottom: -2.4%; left: -4.5%; width: 111%; transform: rotate(.25deg); }
+.tape-left, .tape-right { top: -2.5%; height: 105%; width: 7.5%; }
+.tape-left { left: -3%; top: -4.3%; height: 108%; transform: rotate(.2deg); }
+.tape-right { right: -3%; top: -5%; height: 109%; transform: rotate(-.25deg); }
 .paper-invitation { position: absolute; top: 40%; left: 0; right: 0; display: flex; align-items: center; flex-direction: column; pointer-events: none; color: #aaa58c; font: italic 30px/1.25 'DM Serif Display', Georgia, serif; transform: rotate(-5deg); opacity: .7; }
 .paper-invitation .ui-icon { margin: 15px 0 0 55px; width: 40px; height: 40px; opacity: .6; }
 .paper-caption { width: min(100%, calc((100dvh - 265px) * .8)); display: flex; justify-content: space-between; font-size: 8px; letter-spacing: 1px; color: #888b78; margin-top: 23px; white-space: nowrap; gap: 10px; }
@@ -97,7 +99,7 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
 .save-status { margin-left: auto; font-size: 9px; }
 .about-button { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 12px 0 12px 18px; color: #7d8370; }
 .about-button .ui-icon { width: 12px; height: 12px; }
-.loading-paper { position: absolute; inset: 0; display: grid; place-items: center; font: italic 20px Georgia, serif; color: #88856d; background: #f5f1e5; }
+.loading-paper { position: absolute; inset: 0; display: grid; place-items: center; font: italic 20px Georgia, serif; color: #88856d; background: #f5f1e5; clip-path: var(--paper-edge); }
 .credits { position: fixed; z-index: 6; bottom: 65px; right: 32px; max-width: 330px; padding: 20px 26px; background: #f5f0e3; border: 1px solid #b6b8a3; box-shadow: 0 8px 25px #50463324; font-size: 12px; line-height: 1.6; }
 .credits button { float: right; display: grid; place-items: center; width: 24px; height: 24px; }
 .credits em { font: italic 26px 'DM Serif Display', Georgia, serif; }
@@ -135,8 +137,8 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .export-button { padding: 10px 12px; font-size: 11px; }
   .workspace { grid-template-columns: minmax(0, 1fr) 135px; grid-template-rows: auto auto; min-height: calc(100dvh - 147px); gap: 22px; padding: 25px 0 16px; }
   .paper-area { grid-column: 1; grid-row: 1; }
-  .paper-host { width: min(100%, calc((100dvh - 360px) * .8)); }
-  .paper-caption { width: min(100%, calc((100dvh - 360px) * .8)); }
+  .paper-host { width: min(calc(100% - 36px), calc((100dvh - 360px) * .8)); }
+  .paper-caption { width: min(calc(100% - 36px), calc((100dvh - 360px) * .8)); }
   .paint-tray { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 18px; justify-content: center; }
   .tray-heading, .hand-note { display: none; }
   .tubes { display: flex; gap: 10px; }
@@ -186,3 +188,101 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   kbd { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+
+/* Fine paper fibres stay the same size as the sheet scales. */
+.paper-host { --paper-edge: polygon(
+  0.073% 0.61px, 1.117% 0.33px, 2.166% 0.71px, 3.253% 1.4px, 4.311% 1.48px, 5.214% 0.49px, 6.351% 0.3px, 7.367% 1.93px,
+  8.349% 1.08px, 9.390% 0.51px, 10.580% 0.71px, 11.563% 1.57px, 12.516% 0.44px, 13.551% 0.72px, 14.614% 0.49px, 15.757% 1.0px,
+  16.761% 0.66px, 17.721% 1.11px, 18.825% 0.76px, 19.925% 0.53px, 21.003% 1.24px, 22.045% 0.44px, 22.946% 0.89px, 24.008% 1.48px,
+  25.037% 1.02px, 26.163% 0.4px, 27.141% 1.11px, 28.227% 0.8px, 29.246% 0.6px, 30.244% 1.36px, 31.315% 0.31px, 32.446% 1.02px,
+  33.360% 1.37px, 34.540% 1.89px, 35.506% 1.29px, 36.626% 0.72px, 37.589% 1.04px, 38.599% 0.9px, 39.747% 1.74px, 40.785% 0.64px,
+  41.676% 0.39px, 42.757% 0.8px, 43.773% 0.98px, 44.865% 0.94px, 46.011% 0.68px, 46.885% 0.43px, 47.924% 1.33px, 49.019% 0.27px,
+  50.167% 0.87px, 51.134% 0.79px, 52.233% 1.08px, 53.206% 0.91px, 54.281% 1.05px, 55.247% 0.39px, 56.354% 0.74px, 57.470% 1.44px,
+  58.474% 0.8px, 59.486% 1.76px, 60.540% 1.15px, 61.497% 1.0px, 62.619% 1.03px, 63.712% 1.1px, 64.598% 0.46px, 65.701% 0.41px,
+  66.826% 0.25px, 67.752% 0.9px, 68.755% 1.92px, 69.821% 0.81px, 71.003% 1.89px, 72.028% 0.65px, 73.028% 1.24px, 74.103% 1.37px,
+  75.156% 1.35px, 76.066% 1.82px, 77.188% 0.92px, 78.295% 0.77px, 79.354% 1.34px, 80.327% 0.29px, 81.275% 1.11px, 82.449% 1.92px,
+  83.374% 0.72px, 84.487% 0.68px, 85.572% 1.19px, 86.491% 1.17px, 87.682% 0.86px, 88.686% 0.68px, 89.629% 1.21px, 90.671% 1.41px,
+  91.770% 0.31px, 92.806% 1.28px, 93.924% 0.59px, 94.949% 0.58px, 95.991% 1.45px, 96.977% 0.9px, 97.928% 1.02px, 99.126% 1.25px,
+  calc(100% - 0.44px) 0.149%, calc(100% - 0.26px) 0.956%, calc(100% - 0.82px) 1.709%, calc(100% - 0.32px) 2.554%, calc(100% - 1.94px) 3.479%, calc(100% - 1.31px) 4.253%, calc(100% - 0.6px) 5.140%, calc(100% - 0.68px) 5.886%,
+  calc(100% - 1.17px) 6.784%, calc(100% - 1.15px) 7.649%, calc(100% - 0.46px) 8.403%, calc(100% - 0.56px) 9.230%, calc(100% - 0.94px) 10.030%, calc(100% - 0.84px) 10.888%, calc(100% - 1.27px) 11.667%, calc(100% - 1.24px) 12.647%,
+  calc(100% - 0.99px) 13.396%, calc(100% - 0.37px) 14.277%, calc(100% - 0.88px) 15.075%, calc(100% - 1.12px) 15.904%, calc(100% - 0.91px) 16.793%, calc(100% - 0.47px) 17.540%, calc(100% - 0.35px) 18.396%, calc(100% - 0.48px) 19.262%,
+  calc(100% - 0.45px) 20.095%, calc(100% - 1.21px) 20.896%, calc(100% - 0.44px) 21.771%, calc(100% - 1.33px) 22.610%, calc(100% - 0.79px) 23.367%, calc(100% - 1.17px) 24.225%, calc(100% - 1.26px) 25.040%, calc(100% - 1.09px) 25.952%,
+  calc(100% - 0.66px) 26.690%, calc(100% - 1.37px) 27.640%, calc(100% - 0.28px) 28.367%, calc(100% - 0.82px) 29.301%, calc(100% - 0.27px) 30.026%, calc(100% - 1.71px) 30.962%, calc(100% - 1.3px) 31.700%, calc(100% - 0.73px) 32.554%,
+  calc(100% - 0.32px) 33.457%, calc(100% - 0.45px) 34.243%, calc(100% - 0.83px) 35.139%, calc(100% - 0.84px) 35.939%, calc(100% - 0.64px) 36.684%, calc(100% - 0.54px) 37.586%, calc(100% - 1.1px) 38.410%, calc(100% - 0.31px) 39.170%,
+  calc(100% - 0.98px) 40.057%, calc(100% - 0.43px) 40.946%, calc(100% - 0.83px) 41.787%, calc(100% - 0.84px) 42.582%, calc(100% - 0.42px) 43.451%, calc(100% - 1.2px) 44.189%, calc(100% - 0.67px) 45.138%, calc(100% - 0.74px) 45.834%,
+  calc(100% - 0.38px) 46.672%, calc(100% - 0.83px) 47.574%, calc(100% - 0.86px) 48.437%, calc(100% - 0.83px) 49.243%, calc(100% - 1.16px) 50.107%, calc(100% - 1.02px) 50.940%, calc(100% - 0.98px) 51.761%, calc(100% - 0.72px) 52.643%,
+  calc(100% - 1.4px) 53.416%, calc(100% - 1.04px) 54.261%, calc(100% - 1.12px) 55.054%, calc(100% - 0.6px) 55.906%, calc(100% - 0.74px) 56.792%, calc(100% - 0.78px) 57.539%, calc(100% - 1.13px) 58.359%, calc(100% - 0.33px) 59.273%,
+  calc(100% - 0.49px) 60.107%, calc(100% - 0.98px) 60.835%, calc(100% - 0.36px) 61.689%, calc(100% - 0.56px) 62.577%, calc(100% - 1.49px) 63.384%, calc(100% - 1.87px) 64.169%, calc(100% - 0.86px) 65.046%, calc(100% - 1.28px) 65.906%,
+  calc(100% - 1.11px) 66.764%, calc(100% - 0.84px) 67.638%, calc(100% - 1.41px) 68.366%, calc(100% - 1.41px) 69.180%, calc(100% - 0.28px) 70.133%, calc(100% - 0.36px) 70.874%, calc(100% - 0.75px) 71.732%, calc(100% - 1.41px) 72.507%,
+  calc(100% - 1.26px) 73.381%, calc(100% - 0.95px) 74.247%, calc(100% - 0.9px) 75.118%, calc(100% - 0.59px) 75.838%, calc(100% - 0.52px) 76.720%, calc(100% - 0.93px) 77.547%, calc(100% - 1.78px) 78.377%, calc(100% - 0.81px) 79.296%,
+  calc(100% - 1.34px) 80.101%, calc(100% - 1.44px) 80.847%, calc(100% - 0.54px) 81.695%, calc(100% - 1.15px) 82.559%, calc(100% - 0.39px) 83.434%, calc(100% - 1.28px) 84.205%, calc(100% - 0.39px) 85.073%, calc(100% - 0.98px) 85.866%,
+  calc(100% - 0.3px) 86.815%, calc(100% - 0.49px) 87.578%, calc(100% - 0.76px) 88.334%, calc(100% - 1.14px) 89.311%, calc(100% - 1.34px) 90.051%, calc(100% - 1.26px) 90.844%, calc(100% - 0.63px) 91.729%, calc(100% - 0.53px) 92.641%,
+  calc(100% - 1.31px) 93.400%, calc(100% - 0.5px) 94.303%, calc(100% - 0.85px) 95.123%, calc(100% - 0.62px) 95.868%, calc(100% - 1.26px) 96.733%, calc(100% - 0.91px) 97.624%, calc(100% - 0.85px) 98.373%, calc(100% - 0.66px) 99.300%,
+  99.917% calc(100% - 1.05px), 98.897% calc(100% - 1.34px), 97.906% calc(100% - 0.83px), 96.759% calc(100% - 1.45px), 95.756% calc(100% - 0.48px), 94.687% calc(100% - 0.35px), 93.698% calc(100% - 1.47px), 92.565% calc(100% - 1.17px),
+  91.487% calc(100% - 0.82px), 90.481% calc(100% - 0.69px), 89.456% calc(100% - 1.49px), 88.386% calc(100% - 1.21px), 87.444% calc(100% - 0.45px), 86.384% calc(100% - 1.28px), 85.361% calc(100% - 1.3px), 84.357% calc(100% - 1.38px),
+  83.163% calc(100% - 1.84px), 82.265% calc(100% - 1.41px), 81.121% calc(100% - 0.66px), 80.159% calc(100% - 1.31px), 79.125% calc(100% - 0.65px), 77.940% calc(100% - 0.89px), 76.980% calc(100% - 0.5px), 75.966% calc(100% - 1.09px),
+  74.829% calc(100% - 1.35px), 73.817% calc(100% - 0.44px), 72.760% calc(100% - 1.53px), 71.745% calc(100% - 0.93px), 70.806% calc(100% - 0.98px), 69.678% calc(100% - 1.4px), 68.597% calc(100% - 0.47px), 67.705% calc(100% - 1.12px),
+  66.557% calc(100% - 0.92px), 65.591% calc(100% - 1.42px), 64.396% calc(100% - 0.83px), 63.424% calc(100% - 0.52px), 62.410% calc(100% - 0.5px), 61.372% calc(100% - 0.63px), 60.333% calc(100% - 0.25px), 59.221% calc(100% - 0.34px),
+  58.162% calc(100% - 1.05px), 57.260% calc(100% - 1.31px), 56.160% calc(100% - 0.88px), 55.069% calc(100% - 0.43px), 54.062% calc(100% - 0.73px), 53.120% calc(100% - 1.46px), 52.068% calc(100% - 1.19px), 50.912% calc(100% - 0.65px),
+  49.966% calc(100% - 1.42px), 48.904% calc(100% - 0.91px), 47.879% calc(100% - 1.63px), 46.711% calc(100% - 0.38px), 45.787% calc(100% - 0.52px), 44.704% calc(100% - 0.62px), 43.735% calc(100% - 0.37px), 42.684% calc(100% - 0.56px),
+  41.551% calc(100% - 0.88px), 40.504% calc(100% - 1.27px), 39.404% calc(100% - 0.68px), 38.534% calc(100% - 0.93px), 37.386% calc(100% - 0.75px), 36.293% calc(100% - 1.1px), 35.352% calc(100% - 1.43px), 34.346% calc(100% - 1.24px),
+  33.304% calc(100% - 1.0px), 32.231% calc(100% - 0.66px), 31.196% calc(100% - 0.59px), 30.175% calc(100% - 0.37px), 29.142% calc(100% - 0.77px), 28.118% calc(100% - 0.59px), 26.932% calc(100% - 1.09px), 25.955% calc(100% - 0.4px),
+  24.857% calc(100% - 0.79px), 23.884% calc(100% - 0.51px), 22.739% calc(100% - 0.67px), 21.739% calc(100% - 0.62px), 20.795% calc(100% - 1.22px), 19.707% calc(100% - 0.95px), 18.730% calc(100% - 0.98px), 17.674% calc(100% - 1.49px),
+  16.647% calc(100% - 1.44px), 15.539% calc(100% - 1.52px), 14.417% calc(100% - 0.6px), 13.421% calc(100% - 0.9px), 12.344% calc(100% - 0.37px), 11.325% calc(100% - 0.63px), 10.250% calc(100% - 1.06px), 9.237% calc(100% - 0.99px),
+  8.157% calc(100% - 0.46px), 7.272% calc(100% - 1.24px), 6.120% calc(100% - 0.76px), 5.055% calc(100% - 0.35px), 4.156% calc(100% - 0.63px), 2.993% calc(100% - 0.57px), 1.942% calc(100% - 1.03px), 0.854% calc(100% - 0.99px),
+  1.2px 99.873%, 0.46px 99.110%, 1.06px 98.254%, 1.62px 97.382%, 0.91px 96.517%, 1.39px 95.758%, 0.96px 94.934%, 0.25px 94.047%,
+  1.05px 93.324%, 0.56px 92.423%, 0.81px 91.640%, 1.28px 90.724%, 1.32px 89.924%, 0.68px 89.081%, 0.4px 88.210%, 0.31px 87.370%,
+  0.77px 86.617%, 1.38px 85.699%, 1.01px 84.985%, 1.23px 84.127%, 0.9px 83.292%, 0.41px 82.491%, 0.46px 81.561%, 1.37px 80.827%,
+  1.22px 79.967%, 1.17px 79.143%, 0.68px 78.232%, 0.26px 77.400%, 0.77px 76.593%, 0.74px 75.730%, 0.51px 74.988%, 0.67px 74.078%,
+  1.15px 73.288%, 1.21px 72.456%, 0.65px 71.600%, 1.4px 70.812%, 0.26px 69.998%, 0.38px 69.059%, 1.4px 68.312%, 0.51px 67.476%,
+  0.76px 66.634%, 0.4px 65.688%, 1.46px 64.851%, 1.2px 64.021%, 0.27px 63.184%, 1.11px 62.411%, 1.23px 61.559%, 1.28px 60.738%,
+  0.62px 59.957%, 1.75px 59.152%, 0.3px 58.203%, 1.94px 57.459%, 0.61px 56.601%, 1.5px 55.781%, 1.16px 54.996%, 1.48px 54.034%,
+  1.01px 53.243%, 1.27px 52.372%, 0.85px 51.522%, 1.35px 50.739%, 0.65px 49.994%, 1.22px 49.063%, 1.3px 48.295%, 1.53px 47.407%,
+  1.13px 46.533%, 1.23px 45.801%, 0.92px 44.996%, 0.37px 44.136%, 1.27px 43.329%, 1.3px 42.372%, 0.91px 41.590%, 0.74px 40.764%,
+  0.72px 39.901%, 1.45px 39.064%, 0.95px 38.308%, 0.96px 37.355%, 1.36px 36.588%, 0.52px 35.713%, 0.96px 34.983%, 1.83px 34.138%,
+  0.76px 33.199%, 1.44px 32.442%, 1.58px 31.596%, 1.28px 30.734%, 0.25px 29.952%, 0.64px 29.087%, 1.31px 28.300%, 0.36px 27.410%,
+  0.4px 26.637%, 0.46px 25.827%, 0.4px 24.868%, 0.86px 24.109%, 1.01px 23.208%, 0.99px 22.410%, 1.35px 21.541%, 1.06px 20.756%,
+  1.48px 19.988%, 0.65px 19.118%, 1.53px 18.329%, 0.5px 17.452%, 0.44px 16.528%, 0.93px 15.706%, 0.88px 14.884%, 1.18px 14.084%,
+  0.45px 13.274%, 1.4px 12.398%, 1.35px 11.638%, 0.35px 10.776%, 0.84px 9.940%, 0.42px 9.150%, 1.16px 8.221%, 0.35px 7.443%,
+  0.74px 6.622%, 0.3px 5.817%, 1.45px 4.917%, 0.67px 4.158%, 1.03px 3.297%, 0.51px 2.439%, 1.1px 1.582%, 0.72px 0.712%
+); }
+.tape-top { clip-path: polygon(
+  2.44px 0.59px, 6.250% 0.49px, 12.500% 0.48px, 18.750% 0.41px, 25.000% 0.8px, 31.250% 0.34px,
+  37.500% 0.25px, 43.750% 0.32px, 50.000% 0.32px, 56.250% 0.36px, 62.500% 0.32px, 68.750% 0.22px,
+  75.000% 0.36px, 81.250% 0.35px, 87.500% 0.52px, 93.750% 0.28px, calc(100% - 0.93px) 0.2px, calc(100% - 3.28px) 10.33%,
+  calc(100% - 4.33px) 25.82%, calc(100% - 2.58px) 35.60%, calc(100% - 4.3px) 58.53%, calc(100% - 2.48px) 69.95%, calc(100% - 1.94px) 89.49%, calc(100% - 2.46px) calc(100% - 0.69px),
+  93.750% calc(100% - 0.77px), 87.500% calc(100% - 0.3px), 81.250% calc(100% - 0.5px), 75.000% calc(100% - 0.63px), 68.750% calc(100% - 0.67px), 62.500% calc(100% - 0.4px),
+  56.250% calc(100% - 0.24px), 50.000% calc(100% - 0.56px), 43.750% calc(100% - 0.22px), 37.500% calc(100% - 0.61px), 31.250% calc(100% - 0.15px), 25.000% calc(100% - 0.45px),
+  18.750% calc(100% - 0.46px), 12.500% calc(100% - 0.23px), 6.250% calc(100% - 0.46px), 1.36px calc(100% - 0.48px), 5.23px 93.20%, 5.2px 74.47%,
+  0.44px 61.26%, 0.93px 48.23%, 1.75px 25.77%, 1.86px 12.42%
+); }
+.tape-bottom { clip-path: polygon(
+  1.71px 0.33px, 6.250% 0.52px, 12.500% 0.45px, 18.750% 0.53px, 25.000% 0.47px, 31.250% 0.49px,
+  37.500% 0.28px, 43.750% 0.22px, 50.000% 0.32px, 56.250% 0.66px, 62.500% 0.17px, 68.750% 0.38px,
+  75.000% 0.42px, 81.250% 0.51px, 87.500% 0.43px, 93.750% 0.71px, calc(100% - 1.88px) 0.76px, calc(100% - 1.41px) 13.25%,
+  calc(100% - 5.01px) 23.79%, calc(100% - 4.69px) 40.31%, calc(100% - 5.53px) 55.37%, calc(100% - 1.5px) 70.82%, calc(100% - 1.79px) 85.65%, calc(100% - 2.38px) calc(100% - 0.18px),
+  93.750% calc(100% - 0.3px), 87.500% calc(100% - 0.26px), 81.250% calc(100% - 0.55px), 75.000% calc(100% - 0.2px), 68.750% calc(100% - 0.66px), 62.500% calc(100% - 0.2px),
+  56.250% calc(100% - 0.78px), 50.000% calc(100% - 0.24px), 43.750% calc(100% - 0.24px), 37.500% calc(100% - 0.45px), 31.250% calc(100% - 0.65px), 25.000% calc(100% - 0.47px),
+  18.750% calc(100% - 0.61px), 12.500% calc(100% - 0.31px), 6.250% calc(100% - 0.71px), 1.47px calc(100% - 0.28px), 4.72px 90.36%, 0.62px 77.31%,
+  0.79px 61.46%, 2.19px 46.94%, 1.05px 30.54%, 4.77px 13.29%
+); }
+.tape-left { clip-path: polygon(
+  0.16px 0.69px, 0.41px 6.250%, 0.59px 12.500%, 0.24px 18.750%, 0.22px 25.000%, 0.3px 31.250%,
+  0.64px 37.500%, 0.25px 43.750%, 0.63px 50.000%, 0.58px 56.250%, 0.24px 62.500%, 0.5px 68.750%,
+  0.44px 75.000%, 0.42px 81.250%, 0.8px 87.500%, 0.21px 93.750%, 0.16px calc(100% - 2.84px), 9.19% calc(100% - 2.52px),
+  23.19% calc(100% - 2.12px), 36.26% calc(100% - 5.55px), 57.51% calc(100% - 1.49px), 71.72% calc(100% - 3.31px), 86.13% calc(100% - 4.91px), calc(100% - 0.28px) calc(100% - 2.57px),
+  calc(100% - 0.79px) 93.750%, calc(100% - 0.17px) 87.500%, calc(100% - 0.63px) 81.250%, calc(100% - 0.71px) 75.000%, calc(100% - 0.57px) 68.750%, calc(100% - 0.29px) 62.500%,
+  calc(100% - 0.67px) 56.250%, calc(100% - 0.62px) 50.000%, calc(100% - 0.28px) 43.750%, calc(100% - 0.57px) 37.500%, calc(100% - 0.29px) 31.250%, calc(100% - 0.18px) 25.000%,
+  calc(100% - 0.37px) 18.750%, calc(100% - 0.37px) 12.500%, calc(100% - 0.41px) 6.250%, calc(100% - 0.57px) 2.57px, 93.86% 5.59px, 77.74% 5.76px,
+  60.06% 1.98px, 47.27% 3.73px, 25.56% 4.01px, 15.53% 1.36px
+); }
+.tape-right { clip-path: polygon(
+  0.2px 1.98px, 0.8px 6.250%, 0.24px 12.500%, 0.7px 18.750%, 0.25px 25.000%, 0.42px 31.250%,
+  0.73px 37.500%, 0.34px 43.750%, 0.59px 50.000%, 0.2px 56.250%, 0.71px 62.500%, 0.45px 68.750%,
+  0.15px 75.000%, 0.24px 81.250%, 0.45px 87.500%, 0.66px 93.750%, 0.51px calc(100% - 2.93px), 10.47% calc(100% - 0.8px),
+  26.02% calc(100% - 0.75px), 40.95% calc(100% - 4.36px), 59.31% calc(100% - 0.33px), 67.35% calc(100% - 1.1px), 86.05% calc(100% - 0.81px), calc(100% - 0.66px) calc(100% - 1.31px),
+  calc(100% - 0.52px) 93.750%, calc(100% - 0.62px) 87.500%, calc(100% - 0.69px) 81.250%, calc(100% - 0.51px) 75.000%, calc(100% - 0.5px) 68.750%, calc(100% - 0.41px) 62.500%,
+  calc(100% - 0.64px) 56.250%, calc(100% - 0.46px) 50.000%, calc(100% - 0.78px) 43.750%, calc(100% - 0.75px) 37.500%, calc(100% - 0.34px) 31.250%, calc(100% - 0.79px) 25.000%,
+  calc(100% - 0.75px) 18.750%, calc(100% - 0.51px) 12.500%, calc(100% - 0.74px) 6.250%, calc(100% - 0.35px) 1.73px, 89.43% 3.65px, 77.57% 4.72px,
+  60.59% 2.26px, 45.82% 4.72px, 28.28% 1.63px, 10.80% 0.55px
+); }

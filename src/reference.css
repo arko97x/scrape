@@ -5,7 +5,7 @@
 .study-intro p { font-size:13px; line-height:1.7; color:#7b8272; max-width:240px; }
 .study-intro .export-button { margin-top:27px; gap:22px; }
 .study-intro .study-footnote { margin-top:22px; font-size:11px; }
-.reference-workspace .paper-host { width:min(100%,calc((100dvh - 210px)*.8)); }
+.reference-workspace .paper-host { width:min(calc(100% - 36px),calc((100dvh - 210px)*.8)); }
 .reference-workspace .paper-host .painting { cursor:default; }
 .reference-blade { position:absolute; pointer-events:none; left:50%; width:50%; transform:translate(-50%,-86.2%); z-index:3; }
 .reference-blade .squeegee-art { width:100%; }
