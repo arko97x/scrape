@@ -26,7 +26,6 @@ export function App() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const selected = useRef<'paint' | 'scrape'>('paint');
   const colour = useRef(colours[0].hex);
-  const saveSequence = useRef(0);
   const [tool, setTool] = useState<'paint' | 'scrape'>('paint');
   const [paint, setPaint] = useState(colours[0].hex);
   const [bladeWidth, setBladeWidth] = useState(100);
@@ -34,7 +33,6 @@ export function App() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState(false);
-  const [saving, setSaving] = useState('Your paper is ready');
   const [historyState, setHistoryState] = useState({ undo: false, redo: false });
   const [cursor, setCursor] = useState<Point | null>(null);
   const [contact, setContact] = useState(false);
@@ -52,13 +50,10 @@ export function App() {
   };
 
   const persist = () => {
-    clearTimeout(saveTimer.current); setSaving('Saving your painting…');
-    const sequence = ++saveSequence.current;
+    clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       const current = runtime.current; if (!current) return;
-      savePainting(W, H, current.engine.snapshot()).then(() => {
-        if (saveSequence.current === sequence) setSaving('Saved on this device');
-      }).catch(() => { setStorageWarning(true); setSaving('Export to keep this painting'); });
+      savePainting(W, H, current.engine.snapshot()).catch(() => setStorageWarning(true));
     }, 450);
   };
 
@@ -84,7 +79,7 @@ export function App() {
     frame = requestAnimationFrame(tick);
     loadPainting(W, H).then(state => {
       if (stopped) return;
-      if (state) { engine.restore(state); setSaving('Your painting, right where you left it'); }
+      if (state) engine.restore(state);
       setReady(true); refresh();
     }).catch(() => { if (!stopped) { setStorageWarning(true); setReady(true); } });
     const interrupt = () => {
@@ -198,7 +193,6 @@ export function App() {
           </button>)}
         </div>
         <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Mix your own</span><input type="color" aria-label="Mix a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><ArrowUpRight className="ui-icon" aria-hidden="true"/></label>
-        <p className="hand-note">pick a colour,<br/>see where it takes you <span><ArrowUpRight className="ui-icon" aria-hidden="true"/></span></p>
       </aside>
 
       <div className="paper-area">
@@ -209,11 +203,9 @@ export function App() {
           {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100}%` : undefined, '--blade-angle': `${angle}deg` } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint}/> : <Tube colour={paint} small/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
-        <div className="paper-caption"><span>01 — THE GOOD PAPER</span><span>portrait · 960 × 1200 export</span></div>
       </div>
 
       <aside className="tool-tray" aria-label="Scraping tools">
-        <span className="eyebrow">02 / THE PULL</span>
         <button className={`squeegee-button ${tool === 'scrape' ? 'selected' : ''}`} aria-label="Pick up squeegee" aria-pressed={tool === 'scrape'} disabled={!ready || contact} onClick={selectScraper}><Squeegee paint={carriedPaint}/><span>The squeegee</span><small>pick it up & pull</small></button>
         <div className="blade-controls">
           <label htmlFor="blade-width">Blade width <span>{Math.round(bladeWidth / W * 100)}%</span></label>
@@ -221,13 +213,12 @@ export function App() {
           <button className="rotate-button" disabled={!ready || contact} onClick={() => changeBlade(bladeWidth, angle === 0 ? 90 : 0)}><RotateCw className="ui-icon" aria-hidden="true"/>Turn the blade <span>{angle}°</span></button>
         </div>
         <button className="rag-button" aria-label="Wipe paint off the squeegee" disabled={!ready || !loaded || contact} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.cleanBlade(); refresh(); persist(); } }}><span className={`rag ${loaded ? 'stained' : ''}`} aria-hidden="true"/><span>Wipe it clean</span></button>
-        <div className="desk-note"><span className="note-pin"/><p>the best bit?<br/>you can't get<br/>this wrong.</p></div>
       </aside>
     </section>
 
     <footer className="footer">
       <div className="gesture-hint"><span className="status-dot"/><span>{tool === 'paint' ? 'Hold to squeeze. Drag to make a bead.' : 'Drag across the blade to pull paint. Lift to stop.'}</span><kbd>{tool === 'paint' ? 'P' : 'S'}</kbd></div>
-      <div className="save-status" role="status">{storageWarning ? 'Export to keep this painting' : saving}</div>
+      {storageWarning && <div className="save-status" role="status">Export to keep this painting</div>}
       <button className="about-button" onClick={() => setCredits(!credits)}>made for making <ArrowUpRight className="ui-icon" aria-hidden="true"/></button>
     </footer>
     {credits && <div className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}><X className="ui-icon" aria-hidden="true"/></button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}

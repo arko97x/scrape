@@ -42,9 +42,6 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .custom-colour input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .custom-colour > .ui-icon { margin-left: auto; width: 14px; height: 14px; }
 .custom-colour:focus-within { outline: 2px solid var(--coral); outline-offset: 3px; }
-.hand-note { position: relative; color: #7e8068; font: italic 16px/1.35 Georgia, serif; transform: rotate(-6deg); margin: 18px 0 0 6px; }
-.hand-note span { position: absolute; right: -5px; top: 3px; font-size: 32px; }
-.hand-note .ui-icon { width: 32px; height: 32px; }
 .paper-area { min-width: 0; display: flex; align-items: center; flex-direction: column; }
 .paper-host { position: relative; width: min(100%, calc((100dvh - 265px) * .8)); aspect-ratio: 4 / 5; }
 .paper-surface { position: absolute; inset: 0; filter: drop-shadow(2px 5px 5px #50463313) drop-shadow(6px 20px 18px #50463312) drop-shadow(0 1px 1px #50463338); }
@@ -61,8 +58,6 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .tape-right { right: -3%; top: -5%; height: 109%; transform: rotate(-.25deg); }
 .paper-invitation { position: absolute; top: 40%; left: 0; right: 0; display: flex; align-items: center; flex-direction: column; pointer-events: none; color: #aaa58c; font: italic 30px/1.25 'DM Serif Display', Georgia, serif; transform: rotate(-5deg); opacity: .7; }
 .paper-invitation .ui-icon { margin: 15px 0 0 55px; width: 40px; height: 40px; opacity: .6; }
-.paper-caption { width: min(100%, calc((100dvh - 265px) * .8)); display: flex; justify-content: space-between; font-size: 8px; letter-spacing: 1px; color: #888b78; margin-top: 23px; white-space: nowrap; gap: 10px; }
-.paper-caption span:last-child { letter-spacing: .1px; }
 .tool-cursor { pointer-events: none; position: absolute; z-index: 3; will-change: left, top; }
 .tool-cursor.paint { width: 50px; transform: translate(-46%, -94%) rotate(-18deg); transform-origin: 46% 94%; }
 .tool-cursor.paint .tube-art { width: 100%; height: auto; }
@@ -72,7 +67,6 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .tool-cursor.touching { opacity: .95; }
 .squeegee-art { display: block; width: 100%; height: auto; }
 .tool-tray { align-self: center; margin-top: 35px; }
-.tool-tray > .eyebrow { display: block; margin-left: 9px; }
 .squeegee-button { width: 100%; padding: 20px 5px 17px; margin-top: 14px; border: 1px dashed transparent; border-radius: 6px; }
 .squeegee-button .squeegee-art { transform: rotate(8deg); filter: drop-shadow(4px 8px 3px #50463328); margin-bottom: 16px; transition: transform .16s ease-out; }
 .squeegee-button span { font: 20px 'DM Serif Display', Georgia, serif; display: block; }
@@ -89,9 +83,6 @@ input[type=range] { accent-color: #66795d; width: 100%; height: 20px; cursor: po
 .rag-button:disabled { opacity: .6; }
 .rag { display: block; width: 79px; height: 49px; transform: rotate(-12deg); border-radius: 4px 2px 8px 4px; background: repeating-linear-gradient(3deg, #d1cebb 0 1px, #dcd8c8 1px 4px); box-shadow: 1px 2px 1px #51483322, inset 2px 3px 3px #fff7; border: 1px solid #b5b3a1; clip-path: polygon(4% 0, 100% 6%, 94% 96%, 0 100%); }
 .rag.stained { background: radial-gradient(ellipse at 32% 49%, #bd684854, transparent 30%), radial-gradient(ellipse at 66% 44%, #638c775b, transparent 40%), repeating-linear-gradient(3deg, #d1cebb 0 1px, #dcd8c8 1px 4px); }
-.desk-note { position: relative; background: #ded6b8; width: 142px; padding: 14px 20px; transform: rotate(5deg); margin: 33px auto 0; box-shadow: 2px 4px 4px #50463316; }
-.desk-note p { font: italic 17px/1.35 Georgia, serif; color: #707255; margin: 0; }
-.note-pin { position: absolute; width: 10px; height: 10px; background: #b96c50; border-radius: 50%; top: -4px; left: 65px; box-shadow: 1px 2px 2px #50463344; }
 .footer { min-height: 72px; border-top: 1px solid #47533f24; display: flex; align-items: center; justify-content: space-between; gap: 15px; font-size: 10px; color: #7d8370; }
 .gesture-hint { display: flex; align-items: center; gap: 10px; color: #626e59; }
 .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #ad694c; }
@@ -116,15 +107,12 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .tube-button.selected::before { width: 55px; height: 99px; }
   .tray-heading { margin-bottom: 10px; }
   .tubes { gap: 7px 12px; }
-  .hand-note { display: none; }
-  .desk-note { display: none; }
 }
 @media (max-width: 1100px) {
   .studio { padding: 0 28px; }
   .workspace { grid-template-columns: 144px minmax(0, 1fr) 145px; gap: 28px; }
   .header-caption { display: none; }
   .header-actions { gap: 17px; }
-  .hand-note { font-size: 14px; }
   h1 { font-size: 23px; }
 }
 @media (max-width: 850px) {
@@ -138,9 +126,8 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .workspace { grid-template-columns: minmax(0, 1fr) 135px; grid-template-rows: auto auto; min-height: calc(100dvh - 147px); gap: 22px; padding: 25px 0 16px; }
   .paper-area { grid-column: 1; grid-row: 1; }
   .paper-host { width: min(calc(100% - 36px), calc((100dvh - 360px) * .8)); }
-  .paper-caption { width: min(calc(100% - 36px), calc((100dvh - 360px) * .8)); }
   .paint-tray { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; gap: 18px; justify-content: center; }
-  .tray-heading, .hand-note { display: none; }
+  .tray-heading { display: none; }
   .tubes { display: flex; gap: 10px; }
   .tube-button { min-height: 113px; width: 58px; }
   .tube-button .tube-art { width: 43px; height: 94px; }
@@ -148,7 +135,6 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .custom-colour { margin: 0; border: 0; flex-direction: column; gap: 6px; font-size: 9px; width: 63px; text-align: center; }
   .custom-colour > .ui-icon { display: none; }
   .tool-tray { grid-column: 2; grid-row: 1; margin-top: 0; }
-  .desk-note { display: none; }
   .footer { min-height: 63px; padding-bottom: env(safe-area-inset-bottom); }
   .about-button { display: none; }
   .paper-invitation { font-size: 27px; }
@@ -164,7 +150,7 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .export-button { font-size: 10px; gap: 4px; padding: 10px 9px; }
   .workspace { display: flex; flex-direction: column; gap: 22px; padding-top: 22px; }
   .paper-area { width: 100%; }
-  .paper-host, .paper-caption { width: min(87%, 360px); }
+  .paper-host { width: min(87%, 360px); }
   .paper-invitation { font-size: 25px; }
   .paint-tray { width: 100%; gap: 9px; }
   .tubes { width: 100%; gap: 0; justify-content: space-between; }
@@ -174,7 +160,6 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .tube-name { font-size: 9px; }
   .custom-colour { width: 45px; flex-shrink: 0; }
   .tool-tray { display: flex; align-items: center; width: 100%; justify-content: center; gap: 16px; }
-  .tool-tray > .eyebrow { display: none; }
   .squeegee-button { width: 85px; flex-shrink: 0; margin: 0; padding: 5px; }
   .squeegee-button .squeegee-art { margin-bottom: 9px; }
   .squeegee-button span { font-size: 15px; }
