@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Scrape curved-edge check</title><style>body{margin:16px;background:#e9e5d9;font:14px system-ui;color:#344c3a}button{padding:8px 12px}canvas{display:block;width:960px;height:1200px;margin-top:12px}p{max-width:480px}</style><h1>Curved-edge check</h1><p>An exactly repeatable smooth curve. Same paint engine and renderer as the studio.</p><button id="pull">Run curved pull</button><span id="status"></span><canvas width="960" height="1200"></canvas><script type="module">
+import { PaintEngine } from '../../src/engine.ts';
+import { PaintRenderer } from '../../src/renderer.ts';
+const canvas=document.querySelector('canvas');
+const engine=new PaintEngine(480,600);
+const renderer=new PaintRenderer(canvas,engine);
+const pull=()=>{
+ engine.clear();engine.setBlade(120,0);
+ for(const x of [100,124,148,172])engine.deposit({x,y:90},[.773,.361,.263],8,160);
+ engine.beginScrape({x:135,y:65});
+ for(let n=1;n<=240;n++){
+  const t=n/240*Math.PI/2;
+  engine.scrape({x:135+230*(1-Math.cos(t)),y:65+420*Math.sin(t)});
+ }
+ engine.endScrape(); renderer.render();
+ document.querySelector('#status').textContent=' Done. Paint mass: '+engine.totalMass().toFixed(3)+' / 640';
+};document.querySelector('#pull').addEventListener('click',pull);pull();
+const exportButton=document.createElement('button');exportButton.textContent='Check PNG export';
+document.querySelector('#pull').after(exportButton);
+exportButton.addEventListener('click',async()=>{
+ exportButton.disabled=true;
+ try {
+  const before=engine.snapshot();
+  const capture=document.createElement('canvas');capture.width=960;capture.height=1200;
+  const context=capture.getContext('2d');context.drawImage(canvas,0,0);
+  const live=context.getImageData(0,0,960,1200).data;
+  const blob=await renderer.exportPNG();const url=URL.createObjectURL(blob);
+  const image=new Image();image.src=url;await image.decode();
+  context.clearRect(0,0,960,1200);context.drawImage(image,0,0);
+  const exported=context.getImageData(0,0,960,1200).data;
+  const samePixels=live.every((value,index)=>value===exported[index]);
+  const after=engine.snapshot();const samePaint=before.pixels.every((value,index)=>value===after.pixels[index])&&before.carry.every((value,index)=>value===after.carry[index]);
+  document.querySelector('#status').textContent=(samePixels&&samePaint?' PASS':' FAIL')+' — PNG '+image.naturalWidth+' × '+image.naturalHeight+'; matches live renderer: '+samePixels+'; paint unchanged: '+samePaint;
+  URL.revokeObjectURL(url);
+ }catch(error){document.querySelector('#status').textContent=' FAIL — '+error.message;}
+ finally{exportButton.disabled=false;}
+});
+</script></html>
