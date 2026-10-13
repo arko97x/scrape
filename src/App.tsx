@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import mixbox from 'mixbox';
+import { ArrowDownRight, ArrowUpRight, Download, Plus, Redo2, RotateCw, Undo2, X } from 'lucide-react';
 import { PaintEngine, PaintHistory, type Colour, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
-import { Icon, Squeegee, Tube } from './tools';
+import { Squeegee, Tube } from './tools';
 import { bladePaint, type BladePaintBand } from './blade-paint';
 
 const W = 480, H = 600;
@@ -180,11 +181,11 @@ export function App() {
       <span className="header-caption">a little paint playground</span>
       <div className="header-actions">
         <div className="history-buttons">
-          <button className="icon-button" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled={!historyState.undo || contact || !ready} onClick={() => historyAction('undo')}><Icon name="undo"/></button>
-          <button className="icon-button" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled={!historyState.redo || contact || !ready} onClick={() => historyAction('redo')}><Icon name="redo"/></button>
+          <button className="icon-button" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled={!historyState.undo || contact || !ready} onClick={() => historyAction('undo')}><Undo2 className="ui-icon" aria-hidden="true"/></button>
+          <button className="icon-button" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled={!historyState.redo || contact || !ready} onClick={() => historyAction('redo')}><Redo2 className="ui-icon" aria-hidden="true"/></button>
         </div>
-        <button className="new-sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Icon name="plus"/><span>New sheet</span></button>
-        <button className="export-button" disabled={!ready || exporting || contact} onClick={exportPainting}><Icon name="export"/>{exporting ? 'Exporting…' : 'Keep this one'}</button>
+        <button className="new-sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
+        <button className="export-button" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/>{exporting ? 'Exporting…' : 'Keep this one'}</button>
       </div>
     </header>
 
@@ -196,15 +197,15 @@ export function App() {
             <Tube colour={item.hex} label={item.name.toUpperCase()}/><span className="tube-name">{item.name}</span>
           </button>)}
         </div>
-        <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Mix your own</span><input type="color" aria-label="Mix a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><span aria-hidden="true">↗</span></label>
-        <p className="hand-note">pick a colour,<br/>see where it takes you <span>↗</span></p>
+        <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Mix your own</span><input type="color" aria-label="Mix a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><ArrowUpRight className="ui-icon" aria-hidden="true"/></label>
+        <p className="hand-note">pick a colour,<br/>see where it takes you <span><ArrowUpRight className="ui-icon" aria-hidden="true"/></span></p>
       </aside>
 
       <div className="paper-area">
         <div className={`paper-host ${ready ? 'ready' : ''}`}>
           <canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the squeegee and drag to scrape." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) setCursor(null); }}/>
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
-          {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><svg viewBox="0 0 100 60"><path d="M10 8 Q61 4 71 41 M58 33l13 10 8-17" fill="none" stroke="currentColor" strokeWidth="1.5"/></svg></div>}
+          {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
           {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100}%` : undefined, '--blade-angle': `${angle}deg` } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint}/> : <Tube colour={paint} small/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
@@ -217,7 +218,7 @@ export function App() {
         <div className="blade-controls">
           <label htmlFor="blade-width">Blade width <span>{Math.round(bladeWidth / W * 100)}%</span></label>
           <input id="blade-width" type="range" min="50" max="180" step="10" value={bladeWidth} disabled={!ready || contact} onChange={event => changeBlade(Number(event.target.value), angle)}/>
-          <button className="rotate-button" disabled={!ready || contact} onClick={() => changeBlade(bladeWidth, angle === 0 ? 90 : 0)}><Icon name="rotate"/>Turn the blade <span>{angle}°</span></button>
+          <button className="rotate-button" disabled={!ready || contact} onClick={() => changeBlade(bladeWidth, angle === 0 ? 90 : 0)}><RotateCw className="ui-icon" aria-hidden="true"/>Turn the blade <span>{angle}°</span></button>
         </div>
         <button className="rag-button" aria-label="Wipe paint off the squeegee" disabled={!ready || !loaded || contact} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.cleanBlade(); refresh(); persist(); } }}><span className={`rag ${loaded ? 'stained' : ''}`} aria-hidden="true"/><span>Wipe it clean</span></button>
         <div className="desk-note"><span className="note-pin"/><p>the best bit?<br/>you can't get<br/>this wrong.</p></div>
@@ -227,9 +228,9 @@ export function App() {
     <footer className="footer">
       <div className="gesture-hint"><span className="status-dot"/><span>{tool === 'paint' ? 'Hold to squeeze. Drag to make a bead.' : 'Drag across the blade to pull paint. Lift to stop.'}</span><kbd>{tool === 'paint' ? 'P' : 'S'}</kbd></div>
       <div className="save-status" role="status">{storageWarning ? 'Export to keep this painting' : saving}</div>
-      <button className="about-button" onClick={() => setCredits(!credits)}>made for making ↗</button>
+      <button className="about-button" onClick={() => setCredits(!credits)}>made for making <ArrowUpRight className="ui-icon" aria-hidden="true"/></button>
     </footer>
-    {credits && <div className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}>×</button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}
+    {credits && <div className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}><X className="ui-icon" aria-hidden="true"/></button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}
     {error && <div className="error-message" role="alert">{error}</div>}
   </main>;
 }

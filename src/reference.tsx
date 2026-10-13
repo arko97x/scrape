@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import mixbox from 'mixbox';
+import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { PaintEngine, type Colour } from './engine';
 import { PaintRenderer } from './renderer';
 import { Squeegee } from './tools';
@@ -44,9 +45,9 @@ function ReferenceStudy() {
     animation.current=requestAnimationFrame(tick);
   };
   return <main className="studio reference-study">
-    <header className="header"><a className="wordmark" href="/">scrape<span className="brand-dot">.</span></a><span className="header-caption">a reference study</span><a className="return-studio" href="/">Back to your studio ↗</a></header>
+    <header className="header"><a className="wordmark" href="/">scrape<span className="brand-dot">.</span></a><span className="header-caption">a reference study</span><a className="return-studio" href="/">Back to your studio <ArrowUpRight className="ui-icon" aria-hidden="true"/></a></header>
     <section className="reference-workspace">
-      <div className="study-intro"><span className="eyebrow">A LITTLE MATERIAL STUDY</span><h1>A dollop.<br/>A little pressure.<br/>A wider ribbon.</h1><p>A repeatable swipe inspired by your acrylic references. Watch the mounds flatten, widen, and leave a raised edge.</p><button className="export-button" onClick={pull} disabled={running||!!error}>{running?'Pulling…':progress===1?'Pull it again':'Pull the squeegee'}<span aria-hidden="true">↓</span></button><p className="study-footnote">Then try it yourself with a few blobs in the studio.</p></div>
+      <div className="study-intro"><span className="eyebrow">A LITTLE MATERIAL STUDY</span><h1>A dollop.<br/>A little pressure.<br/>A wider ribbon.</h1><p>A repeatable swipe inspired by your acrylic references. Watch the mounds flatten, widen, and leave a raised edge.</p><button className="export-button" onClick={pull} disabled={running||!!error}>{running?'Pulling…':progress===1?'Pull it again':'Pull the squeegee'}<ArrowDown className="ui-icon" aria-hidden="true"/></button><p className="study-footnote">Then try it yourself with a few blobs in the studio.</p></div>
       <div className="paper-area"><div className="paper-host"><canvas ref={canvas} className="painting" width="960" height="1200" aria-label="Animated reference swipe showing acrylic-like spreading and raised edges"/><div className="border-tape tape-top"/><div className="border-tape tape-bottom"/><div className="border-tape tape-left"/><div className="border-tape tape-right"/>{(running||progress===1)&&<div className="reference-blade" style={{top:`${(115+progress*390)/600*100}%`}}><Squeegee paint={carriedPaint}/></div>}</div><p className="study-status" role="status">{error || (running?'Flattening · spreading · leaving an edge':progress===1?'The pull, with its raised shoulders.':'Seven dollops. Ready for one pull.')}</p></div>
     </section>
   </main>;

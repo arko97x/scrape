@@ -37,12 +37,3 @@ export function Squeegee({ paint = [] }: { paint?: BladePaintBand[] }) {
   </svg>;
 }
 
-export function Icon({ name }: { name: 'undo' | 'redo' | 'export' | 'plus' | 'rotate' }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {name === 'undo' && <path d="M9 5 4 10l5 5M4 10h10a6 6 0 0 1 6 6v3"/>}
-    {name === 'redo' && <path d="m15 5 5 5-5 5m5-5H10a6 6 0 0 0-6 6v3"/>}
-    {name === 'export' && <><path d="M12 15V3m-4 4 4-4 4 4M5 13v7h14v-7"/></>}
-    {name === 'plus' && <path d="M12 5v14M5 12h14"/>}
-    {name === 'rotate' && <><path d="M20 9a8 8 0 1 0 0 6M20 3v6h-6"/></>}
-  </svg>;
-}
