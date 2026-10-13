@@ -5,7 +5,8 @@ import { PaintEngine, PaintHistory, type Colour, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
-import { Squeegee, Tube } from './tools';
+import { Pen, Squeegee, Tube } from './tools';
+import type { InkStroke } from './ink';
 import { bladePaint, type BladePaintBand } from './blade-paint';
 import { DispensingTube, type DispensingTubeHandle } from './DispensingTube';
 import { DISPENSE_RELEASE_MS } from './dispense-motion';
@@ -19,7 +20,8 @@ const colours = [
 ];
 const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255] as Colour;
 const pigmentBlend = (a: Colour, b: Colour, t: number): Colour => mixbox.lerp(a.map(v => v * 255), b.map(v => v * 255), t).map(v => v / 255) as Colour;
-type Gesture = { pointerId: number; squeeze?: SqueezeStroke };
+type Tool = 'paint' | 'scrape' | 'pen';
+type Gesture = { pointerId: number; squeeze?: SqueezeStroke; pen?: InkStroke };
 type Runtime = { engine: PaintEngine; history: PaintHistory; renderer: PaintRenderer };
 
 export function App() {
@@ -32,9 +34,11 @@ export function App() {
   const hideAfterRelease = useRef(false);
   const hoverPoint = useRef<Point | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const selected = useRef<'paint' | 'scrape'>('paint');
+  const selected = useRef<Tool>('paint');
   const colour = useRef(colours[0].hex);
-  const [tool, setTool] = useState<'paint' | 'scrape'>('paint');
+  const [tool, setTool] = useState<Tool>('paint');
+  const [penColour, setPenColour] = useState('#344c5a');
+  const [penWidth, setPenWidth] = useState(2.5);
   const [paint, setPaint] = useState(colours[0].hex);
   const [bladeWidth, setBladeWidth] = useState(100);
   const [angle, setAngle] = useState(0);
@@ -53,7 +57,7 @@ export function App() {
   const refresh = () => {
     const current = runtime.current; if (!current) return;
     setHistoryState({ undo: current.history.canUndo, redo: current.history.canRedo });
-    setCarriedPaint(bladePaint(current.engine)); setHasPaint(current.engine.surfaceMass() > .1);
+    setCarriedPaint(bladePaint(current.engine)); setHasPaint(current.engine.surfaceMass() > .1 || current.engine.ink.length > 0);
     setBladeWidth(current.engine.bladeWidth); setAngle(current.engine.angle);
   };
 
@@ -115,6 +119,7 @@ export function App() {
   };
   const selectPaint = (hex: string) => { if (gesture.current) return; cancelRelease(); selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); };
   const selectScraper = () => { if (gesture.current) return; cancelRelease(); selected.current = 'scrape'; setTool('scrape'); };
+  const selectPen = () => { if (gesture.current) return; cancelRelease(); selected.current = 'pen'; setTool('pen'); };
   const changeBlade = (width: number, rotation: number) => {
     const current = runtime.current; if (!current || gesture.current) return;
     current.history.checkpoint(); current.engine.setBlade(width, rotation); refresh(); persist();
@@ -131,6 +136,7 @@ export function App() {
       else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); historyAction('redo'); }
       else if (event.key.toLowerCase() === 's') selectScraper();
       else if (event.key.toLowerCase() === 'p') selectPaint(colour.current);
+      else if (event.key.toLowerCase() === 'n') selectPen();
       else if (event.key === 'Escape') { dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); }
     };
     window.addEventListener('keydown', keyboard); return () => window.removeEventListener('keydown', keyboard);
@@ -152,6 +158,8 @@ export function App() {
       const squeeze = new SqueezeStroke(current.engine, point, rgb(colour.current), performance.now());
       squeeze.flow = event.pointerType === 'pen' && event.pressure > 0 ? .5 + event.pressure * 1.5 : 1;
       gesture.current = { pointerId: event.pointerId, squeeze };
+    } else if (selected.current === 'pen') {
+      gesture.current = { pointerId: event.pointerId, pen: current.engine.beginInk(point, rgb(penColour), penWidth) };
     } else { current.engine.beginScrape(point); gesture.current = { pointerId: event.pointerId }; }
     refresh();
   };
@@ -164,9 +172,11 @@ export function App() {
     const samples = event.nativeEvent.getCoalescedEvents?.() || [];
     for (const sample of samples.length ? samples : [event.nativeEvent]) {
       const at = pointFrom(sample.clientX, sample.clientY);
-      if (active.squeeze) active.squeeze.move(at); else current.engine.scrape(at);
+      if (active.squeeze) active.squeeze.move(at);
+      else if (active.pen) current.engine.extendInk(active.pen, at);
+      else current.engine.scrape(at);
     }
-    if (!active.squeeze) setCarriedPaint(bladePaint(current.engine));
+    if (!active.squeeze && !active.pen) setCarriedPaint(bladePaint(current.engine));
     if (active.squeeze && event.pointerType === 'pen' && event.pressure > 0) active.squeeze.flow = .5 + event.pressure * 1.5;
   };
   const pointerEnd = (event: ReactPointerEvent<HTMLCanvasElement>) => {
@@ -174,7 +184,9 @@ export function App() {
     if (!active || !current || active.pointerId !== event.pointerId) return;
     if (event.type === 'pointerup') {
       const point = pointFrom(event.clientX, event.clientY);
-      if (active.squeeze) { active.squeeze.move(point); active.squeeze.finish(performance.now()); } else current.engine.scrape(point);
+      if (active.squeeze) { active.squeeze.move(point); active.squeeze.finish(performance.now()); }
+      else if (active.pen) current.engine.extendInk(active.pen, point);
+      else current.engine.scrape(point);
     } else {
       active.squeeze?.finish(performance.now());
     }
@@ -233,27 +245,34 @@ export function App() {
 
       <div className="paper-area">
         <div className={`paper-host ${ready ? 'ready' : ''}`}>
-          <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the squeegee and drag to scrape." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
+          <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the scraper and drag to scrape, or select the pen to draw clean lines." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
           {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
-          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working"/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
+          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working"/> : tool === 'pen' ? <Pen colour={penColour}/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
       </div>
 
-      <aside className="tool-tray" aria-label="Scraping tools">
+      <aside className="tool-tray" aria-label="Drawing tools">
         <button className={`squeegee-button ${tool === 'scrape' ? 'selected' : ''}`} aria-label="Pick up scraper card" aria-pressed={tool === 'scrape'} disabled={!ready || contact} onClick={selectScraper}><Squeegee paint={carriedPaint}/><span>The scraper</span><small>pick it up & pull</small></button>
+        <button className={`pen-button ${tool === 'pen' ? 'selected' : ''}`} aria-label="Pick up pen" aria-pressed={tool === 'pen'} title="Pen (N)" disabled={!ready || contact} onClick={selectPen}><span className="pen-rest"><Pen colour={penColour}/></span><span>The pen</span></button>
+        {tool === 'pen' ? <div className="pen-controls">
+          <label htmlFor="pen-width">Line width <span>{penWidth}</span></label>
+          <input id="pen-width" type="range" min="1" max="12" step=".5" value={penWidth} disabled={!ready || contact} onChange={event => setPenWidth(Number(event.target.value))}/>
+          <label className="pen-colour"><span>Ink colour</span><input type="color" aria-label="Choose pen ink colour" value={penColour} disabled={!ready || contact} onChange={event => setPenColour(event.target.value)}/></label>
+        </div> : <>
         <div className="blade-controls">
           <label htmlFor="blade-width">Blade width <span>{Math.round(bladeWidth / W * 100)}%</span></label>
           <input id="blade-width" type="range" min="50" max="180" step="10" value={bladeWidth} disabled={!ready || contact} onChange={event => changeBlade(Number(event.target.value), angle)}/>
           <button className="rotate-button" disabled={!ready || contact} onClick={() => changeBlade(bladeWidth, angle === 0 ? 90 : 0)}><RotateCw className="ui-icon" aria-hidden="true"/>Turn the blade <span>{angle}°</span></button>
         </div>
         <button className="rag-button" aria-label="Wipe paint off the squeegee" disabled={!ready || !loaded || contact} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.cleanBlade(); refresh(); persist(); } }}><span className={`rag ${loaded ? 'stained' : ''}`} aria-hidden="true"/><span>Wipe it clean</span></button>
+        </>}
       </aside>
     </section>
 
     <footer className="footer">
-      <div className="gesture-hint"><span className="status-dot"/><span>{tool === 'paint' ? 'Hold to squeeze. Drag to make a bead.' : 'Drag across the blade to pull paint. Lift to stop.'}</span><kbd>{tool === 'paint' ? 'P' : 'S'}</kbd></div>
+      <div className="gesture-hint"><span className="status-dot"/><span>{tool === 'paint' ? 'Hold to squeeze. Drag to make a bead.' : tool === 'pen' ? 'Drag to draw. Lift to finish. Hold for a steady dot.' : 'Drag across the blade to pull paint. Lift to stop.'}</span><kbd>{tool === 'paint' ? 'P' : tool === 'pen' ? 'N' : 'S'}</kbd></div>
       {storageWarning && <div className="save-status" role="status">Export to keep this painting</div>}
       <button className="about-button" onClick={() => setCredits(!credits)}>made for making <ArrowUpRight className="ui-icon" aria-hidden="true"/></button>
     </footer>

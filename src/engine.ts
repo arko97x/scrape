@@ -1,4 +1,5 @@
 import { bladeContact, materialHash, materialNoise, paperResistance } from './surface';
+import { copyInk, validInk, type InkStroke } from './ink';
 
 export type Colour = [number, number, number];
 export type Point = { x: number; y: number };
@@ -10,6 +11,7 @@ export type PaintSnapshot = {
   bladeWidth: number;
   angle: number;
   wetSource?: Uint8Array;
+  ink?: InkStroke[];
 };
 
 export const linearBlend: Blend = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t) as Colour;
@@ -19,6 +21,8 @@ export class PaintEngine {
   readonly pixels: Float32Array;
   readonly margin: number;
   readonly carry = new Float32Array(256 * 4);
+  readonly ink: InkStroke[] = [];
+  inkRevision = 0;
   bladeWidth = 100;
   angle = 0;
   discarded = 0;
@@ -44,6 +48,20 @@ export class PaintEngine {
 
   inside(x: number, y: number) {
     return x >= this.margin && y >= this.margin && x < this.width - this.margin && y < this.height - this.margin;
+  }
+
+  beginInk(point: Point, colour: Colour, width: number): InkStroke {
+    const stroke: InkStroke = { points: [{ ...point }], colour: [...colour], width };
+    if (!validInk([stroke])) throw new Error('This pen stroke is invalid.');
+    this.ink.push(stroke); this.inkRevision++;
+    return stroke;
+  }
+
+  extendInk(stroke: InkStroke, point: Point) {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return;
+    const last = stroke.points[stroke.points.length - 1];
+    if (Math.hypot(point.x - last.x, point.y - last.y) < .01) return;
+    stroke.points.push({ ...point }); this.inkRevision++;
   }
 
   private mark(x: number, y: number) {
@@ -306,12 +324,14 @@ export class PaintEngine {
   totalMass() { return this.surfaceMass() + this.carriedMass() + this.discarded; }
 
   snapshot(): PaintSnapshot {
-    return { pixels: this.pixels.slice(), carry: this.carry.slice(), discarded: this.discarded, bladeWidth: this.bladeWidth, angle: this.angle, wetSource: this.wetSource.slice() };
+    return { pixels: this.pixels.slice(), carry: this.carry.slice(), discarded: this.discarded, bladeWidth: this.bladeWidth, angle: this.angle, wetSource: this.wetSource.slice(), ink: copyInk(this.ink) };
   }
 
   restore(snapshot: PaintSnapshot) {
     if (snapshot.pixels.length !== this.pixels.length || snapshot.carry.length !== this.carry.length) throw new Error('This painting has incompatible dimensions.');
     if (![...snapshot.carry].every(Number.isFinite) || !snapshot.pixels.every(Number.isFinite)) throw new Error('This painting contains invalid paint data.');
+    if (snapshot.ink !== undefined && !validInk(snapshot.ink)) throw new Error('This painting contains invalid pen data.');
+    this.ink.length = 0; this.ink.push(...copyInk(snapshot.ink ?? [])); this.inkRevision++;
     this.pixels.set(snapshot.pixels); this.carry.set(snapshot.carry);
     this.wetSource.fill(0);
     if (snapshot.wetSource?.length === this.wetSource.length) this.wetSource.set(snapshot.wetSource);
@@ -321,6 +341,7 @@ export class PaintEngine {
   }
 
   clear() {
+    this.ink.length = 0; this.inkRevision++;
     this.pixels.fill(0); this.carry.fill(0); this.discarded = 0; this.endScrape();
     this.wetSource.fill(0);
     this.dirty = { x: 0, y: 0, right: this.width, bottom: this.height };

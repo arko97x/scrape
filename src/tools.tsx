@@ -30,6 +30,24 @@ export function Tube({ colour, small = false }: { colour: string; small?: boolea
   return <svg viewBox="0 0 200 500" className={`tube-art ${small ? 'small' : ''}`} aria-hidden="true" focusable="false" style={{ isolation: 'isolate' }}><TubeArtwork colour={colour}/></svg>;
 }
 
+export function Pen({ colour }: { colour: string }) {
+  const id = useId().replace(/:/g, '');
+  return <svg viewBox="0 0 44 250" className="pen-art" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id={`${id}-barrel`}><stop stopColor="#172125"/><stop offset=".3" stopColor="#505b60"/><stop offset=".55" stopColor="#303a3f"/><stop offset="1" stopColor="#151d20"/></linearGradient>
+      <linearGradient id={`${id}-steel`}><stop stopColor="#7c817b"/><stop offset=".35" stopColor="#ece9dc"/><stop offset=".7" stopColor="#adb1a8"/><stop offset="1" stopColor="#696f68"/></linearGradient>
+    </defs>
+    <path d="M14 15 Q14 7 22 7 Q30 7 30 15V203L27 225H17L14 203Z" fill={`url(#${id}-barrel)`} stroke="#172125" strokeWidth=".6"/>
+    <path d="M15 22H29M15 49H29M15 200H29" stroke="#929a90" strokeOpacity=".45"/>
+    <rect x="15" y="54" width="14" height="9" rx="1" fill={colour}/>
+    <path d="M16 66V178" stroke="#cbd0c5" strokeWidth=".7" opacity=".26"/>
+    <path d="M27 16Q33 16 33 22V58Q32 62 29 62V21" fill={`url(#${id}-steel)`} stroke="#737c74" strokeWidth=".5"/>
+    <path d="M17 217H27L25 235H19Z" fill={`url(#${id}-steel)`} stroke="#626d67" strokeWidth=".5"/>
+    <path d="M20 234H24L23 244H21Z" fill={colour} stroke="#172125" strokeWidth=".6"/>
+    <path d="M18 207H26M18 211H26M19 215H25" stroke="#a3aaa1" strokeWidth=".7" opacity=".4"/>
+  </svg>;
+}
+
 export function Squeegee({ paint = [], pose = 'resting' }: { paint?: BladePaintBand[]; pose?: 'resting' | 'working' }) {
   const id = useId().replace(/:/g, '');
   const { width, height, bladeLeft, bladeRight, contactY, edgeThickness } = squeegeeGeometry;

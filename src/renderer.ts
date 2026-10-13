@@ -1,5 +1,6 @@
 import { PaintEngine } from './engine';
 import { PIGMENT_ABSORPTION } from './material';
+import { drawInk } from './ink';
 
 const vertex = `#version 300 es
 in vec2 position;
@@ -9,6 +10,7 @@ void main() { uv = position * .5 + .5; gl_Position = vec4(position, 0., 1.); }`;
 const fragment = `#version 300 es
 precision highp float;
 uniform sampler2D paint;
+uniform sampler2D ink;
 uniform vec2 fieldSize;
 in vec2 uv;
 out vec4 outputColour;
@@ -94,13 +96,17 @@ void main() {
   vec3 colour = mix(base, base * base * .9, shade) * (1. + max(0., lit - 1.) * .25);
   colour += vec3(specular * smoothstep(.004, .03, h));
   colour += (grain - .5) * .008;
-  outputColour = vec4(mix(paper, colour, opacity), 1.);
+  vec4 pen = texture(ink, p);
+  outputColour = vec4(mix(paper, colour, opacity) * (1. - pen.a) + pen.rgb, 1.);
 }`;
 
 export class PaintRenderer {
   private gl: WebGL2RenderingContext;
   private program: WebGLProgram;
   private texture: WebGLTexture;
+  private inkTexture: WebGLTexture;
+  private inkCanvas?: HTMLCanvasElement;
+  private inkRevision = -1;
   private buffer: WebGLBuffer;
   private vao: WebGLVertexArrayObject;
   private uploaded = false;
@@ -128,12 +134,36 @@ export class PaintRenderer {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, engine.width, engine.height, 0, gl.RGBA, gl.FLOAT, engine.pixels);
     gl.uniform1i(gl.getUniformLocation(program, 'paint'), 0);
     gl.uniform2f(gl.getUniformLocation(program, 'fieldSize'), engine.width, engine.height);
+    this.inkTexture = gl.createTexture()!;
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.inkTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    gl.uniform1i(gl.getUniformLocation(program, 'ink'), 1);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.texture);
   }
 
   render(force = false) {
     const { gl, engine } = this;
-    if (!engine.dirty && this.uploaded && !force) return;
-    gl.useProgram(this.program); gl.bindVertexArray(this.vao); gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    if (!engine.dirty && this.uploaded && !force && this.inkRevision === engine.inkRevision) return;
+    gl.useProgram(this.program); gl.bindVertexArray(this.vao);
+    if (this.inkRevision !== engine.inkRevision) {
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.inkTexture);
+      if (engine.ink.length) {
+        this.inkCanvas ??= document.createElement('canvas');
+        if (this.inkCanvas.width !== engine.width * 2 || this.inkCanvas.height !== engine.height * 2) {
+          this.inkCanvas.width = engine.width * 2; this.inkCanvas.height = engine.height * 2;
+        }
+        const context = this.inkCanvas.getContext('2d')!;
+        drawInk(context, engine.ink, engine.width, engine.height, engine.margin, 2);
+        // Premultiplication keeps partially covered, coloured ink edges clean.
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.inkCanvas);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      } else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      this.inkRevision = engine.inkRevision;
+    }
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.texture);
     if (engine.dirty) {
       const { x, y, right, bottom } = engine.dirty;
       gl.pixelStorei(gl.UNPACK_ROW_LENGTH, engine.width);
@@ -152,6 +182,6 @@ export class PaintRenderer {
   }
 
   dispose() {
-    this.gl.deleteTexture(this.texture); this.gl.deleteBuffer(this.buffer); this.gl.deleteVertexArray(this.vao); this.gl.deleteProgram(this.program);
+    this.gl.deleteTexture(this.texture); this.gl.deleteTexture(this.inkTexture); this.gl.deleteBuffer(this.buffer); this.gl.deleteVertexArray(this.vao); this.gl.deleteProgram(this.program);
   }
 }

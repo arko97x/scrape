@@ -85,6 +85,21 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .squeegee-button.selected span::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); margin: 0 7px 3px 0; }
 .squeegee-button.selected .squeegee-art { transform: rotate(0deg) translateY(-3px); }
 .blade-controls { padding: 18px 10px 0; }
+/* A fixed-width fineliner, with its tip anchored to the contact point. */
+.pen-art { display: block; width: 24px; height: auto; }
+.pen-button { width: 100%; padding: 10px 5px; border-radius: 6px; }
+.pen-rest { display: block; position: relative; height: 42px; margin-bottom: 7px; }
+.pen-rest .pen-art { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(72deg); width: 20px; filter: drop-shadow(2px 3px 1.5px #50463338); }
+.pen-button > span:last-child { font: 18px 'DM Serif Display', Georgia, serif; }
+.pen-button.selected > span:last-child::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); margin: 0 7px 3px 0; }
+.pen-controls { padding: 12px 10px 0; font-size: 10px; }
+.pen-controls > label { display: flex; align-items: center; justify-content: space-between; color: #737b67; margin-bottom: 5px; }
+.pen-controls .pen-colour { margin-top: 10px; }
+.pen-colour input { width: 28px; height: 25px; padding: 0; border: 0; background: none; cursor: pointer; }
+.tool-cursor.pen { width: 24px; transform: translate(-50%, -97.6%) rotate(-18deg); transform-origin: 50% 97.6%; }
+.tool-cursor.pen .pen-art { width: 100%; }
+.tool-cursor.pen.lifted { opacity: 1; filter: drop-shadow(3px 5px 2px #51483338); }
+.tool-cursor.pen.touching { opacity: 1; filter: drop-shadow(.5px 1px .5px #51483328); }
 .blade-controls label { display: flex; justify-content: space-between; font-size: 10px; color: #737b67; margin-bottom: 5px; }
 input[type=range] { accent-color: #66795d; width: 100%; height: 20px; cursor: pointer; }
 .rotate-button { display: flex; width: 100%; align-items: center; gap: 5px; padding: 7px 0; font-size: 10px; }
@@ -173,6 +188,11 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans
   .squeegee-button span { font-size: 15px; }
   .squeegee-button small { display: none; }
   .blade-controls { padding: 0; flex: 1; max-width: 140px; }
+  .pen-button { width: 64px; flex-shrink: 0; padding: 5px 0; }
+  .pen-rest { height: 30px; margin-bottom: 7px; }
+  .pen-rest .pen-art { width: 13px; }
+  .pen-button > span:last-child { font-size: 15px; }
+  .pen-controls { padding: 0; flex: 1; max-width: 150px; }
   .rag-button { width: 74px; padding: 0; gap: 7px; }
   .rag { width: 53px; height: 34px; }
   .footer { flex-wrap: wrap; gap: 3px; justify-content: center; padding: 15px 0 20px; margin-top: 20px; }

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Scrape pen check</title>
+<style>body{margin:20px;background:#e9e3d7;color:#35483a;font:14px system-ui}button{padding:9px 12px;margin-right:8px}canvas{display:block;margin-top:16px;width:480px;height:600px}p{max-width:680px}output{display:block;margin:12px 0}</style>
+<h1>Pen material check</h1><p>Fixed-width ink on bare paper and scraped paint. This isolated check does not load or save the studio painting.</p>
+<button id="checks">Check ink and PNG export</button><button id="scrape">Scrape through the drawing</button><output id="result">Ready.</output><canvas width="960" height="1200"></canvas>
+<script type="module">
+import { PaintEngine } from '../../src/engine.ts';
+import { PaintRenderer } from '../../src/renderer.ts';
+import { drawInk } from '../../src/ink.ts';
+const engine=new PaintEngine(480,600),canvas=document.querySelector('canvas'),renderer=new PaintRenderer(canvas,engine);
+engine.deposit({x:180,y:255},[.773,.361,.263],18,800);engine.deposit({x:255,y:255},[.392,.573,.584],14,600);
+engine.setBlade(160,0);engine.beginScrape({x:215,y:220});engine.scrape({x:235,y:510});engine.endScrape();
+function line(points,width,colour=[.204,.298,.353]){const stroke=engine.beginInk(points[0],colour,width);points.slice(1).forEach(p=>engine.extendInk(stroke,p));return stroke;}
+line([{x:70,y:100},{x:410,y:100}],2.5);
+line([{x:70,y:150},{x:240,y:150},{x:240,y:200},{x:410,y:200}],6);
+const dot=line([{x:95,y:210}],6);
+line(Array.from({length:61},(_,i)=>{const t=i/60*Math.PI*2;return{x:215+68*Math.cos(t),y:352+62*Math.sin(t)};}),3);
+line([{x:-20,y:550},{x:500,y:550}],12,[.773,.361,.263]);renderer.render();
+document.querySelector('#scrape').onclick=()=>{engine.beginScrape({x:240,y:80});engine.scrape({x:240,y:535});engine.endScrape();renderer.render();document.querySelector('#result').textContent='Scraped. Ink stays in place.';};
+document.querySelector('#checks').onclick=async()=>{
+ const result=document.querySelector('#result');result.textContent='Checking…';
+ try{
+  const probe=document.createElement('canvas');probe.width=960;probe.height=1200;const ctx=probe.getContext('2d');
+  drawInk(ctx,engine.ink,480,600,engine.margin,2);
+  const baseline=ctx.getImageData(0,0,960,1200).data.slice();
+  for(let i=0;i<1000;i++)engine.extendInk(dot,{x:95,y:210});
+  drawInk(ctx,engine.ink,480,600,engine.margin,2);const held=ctx.getImageData(0,0,960,1200).data;
+  if(!baseline.every((v,i)=>v===held[i]))throw Error('Held dot grew.');
+  const widthAt=(x,y)=>{let coverage=0;for(let row=y-20;row<=y+20;row++)coverage+=held[(row*960+x)*4+3]/255;return coverage;};
+  if(Math.abs(widthAt(400,200)-5)>.1||Math.abs(widthAt(400,300)-12)>.1)throw Error('Line width changed.');
+  if(held[(1100*960+20)*4+3]||held[(1100*960+940)*4+3])throw Error('Ink crossed the tape margin.');
+  const inkBefore=JSON.stringify(engine.ink);document.querySelector('#scrape').click();if(JSON.stringify(engine.ink)!==inkBefore)throw Error('Scraper moved ink.');
+  ctx.clearRect(0,0,960,1200);ctx.drawImage(canvas,0,0);const live=ctx.getImageData(0,0,960,1200).data.slice();
+  const blob=await renderer.exportPNG(),url=URL.createObjectURL(blob),image=new Image();image.src=url;await image.decode();
+  ctx.clearRect(0,0,960,1200);ctx.drawImage(image,0,0);const exported=ctx.getImageData(0,0,960,1200).data;URL.revokeObjectURL(url);
+  if(!live.every((v,i)=>v===exported[i]))throw Error('Export differs from the live drawing.');
+  result.textContent='PASS — held dot stable; widths 2.5 and 6; tape margins protected; ink stays put; PNG matches live canvas.';
+ }catch(error){result.textContent='FAIL — '+error.message;}
+};
+</script></html>
