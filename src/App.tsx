@@ -1,26 +1,21 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import mixbox from 'mixbox';
-import { ArrowDownRight, ArrowUpRight, Download, Plus, Redo2, RotateCw, Undo2, X } from 'lucide-react';
+import { ArrowDownRight, Download, Plus, X } from 'lucide-react';
 import { PaintEngine, PaintHistory, type Colour, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
-import { Pen, Squeegee, Tube } from './tools';
+import { Pen, Squeegee } from './tools';
 import type { InkStroke } from './ink';
 import { bladePaint, type BladePaintBand } from './blade-paint';
 import { DispensingTube, type DispensingTubeHandle } from './DispensingTube';
 import { DISPENSE_RELEASE_MS } from './dispense-motion';
 import { squeegeeAnchor, squeegeeWidthScale } from './squeegee-geometry';
+import { penWidths, StudioDock, studioColours as colours, type StudioTool as Tool } from './StudioDock';
 
 const W = 480, H = 600;
-const colours = [
-  { name: 'Butter', hex: '#e5b84e' }, { name: 'Tomato', hex: '#c55c43' },
-  { name: 'Rose', hex: '#d99092' }, { name: 'Lake', hex: '#649295' },
-  { name: 'Moss', hex: '#7a8963' }, { name: 'Ink', hex: '#344c5a' },
-];
 const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255] as Colour;
 const pigmentBlend = (a: Colour, b: Colour, t: number): Colour => mixbox.lerp(a.map(v => v * 255), b.map(v => v * 255), t).map(v => v / 255) as Colour;
-type Tool = 'paint' | 'scrape' | 'pen';
 type Gesture = { pointerId: number; squeeze?: SqueezeStroke; pen?: InkStroke };
 type Runtime = { engine: PaintEngine; history: PaintHistory; renderer: PaintRenderer };
 
@@ -37,8 +32,10 @@ export function App() {
   const selected = useRef<Tool>('paint');
   const colour = useRef(colours[0].hex);
   const [tool, setTool] = useState<Tool>('paint');
+  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [keyboardMotion, setKeyboardMotion] = useState(false);
   const [penColour, setPenColour] = useState('#344c5a');
-  const [penWidth, setPenWidth] = useState(2.5);
+  const [penWidth, setPenWidth] = useState<number>(penWidths[0].width);
   const [paint, setPaint] = useState(colours[0].hex);
   const [bladeWidth, setBladeWidth] = useState(100);
   const [angle, setAngle] = useState(0);
@@ -49,7 +46,6 @@ export function App() {
   const [cursor, setCursor] = useState<Point | null>(null);
   const [contact, setContact] = useState(false);
   const [carriedPaint, setCarriedPaint] = useState<BladePaintBand[]>([]);
-  const loaded = carriedPaint.length > 0;
   const [exporting, setExporting] = useState(false);
   const [hasPaint, setHasPaint] = useState(false);
   const [credits, setCredits] = useState(false);
@@ -117,9 +113,9 @@ export function App() {
     dispensingTube.current?.cancel(); releaseUntil.current = 0;
     if (hideAfterRelease.current) setCursor(null);
   };
-  const selectPaint = (hex: string) => { if (gesture.current) return; cancelRelease(); selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); };
-  const selectScraper = () => { if (gesture.current) return; cancelRelease(); selected.current = 'scrape'; setTool('scrape'); };
-  const selectPen = () => { if (gesture.current) return; cancelRelease(); selected.current = 'pen'; setTool('pen'); };
+  const selectPaint = (hex: string) => { if (gesture.current) return; cancelRelease(); selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); setSettingsOpen(true); };
+  const selectScraper = () => { if (gesture.current) return; cancelRelease(); selected.current = 'scrape'; setTool('scrape'); setSettingsOpen(true); };
+  const selectPen = () => { if (gesture.current) return; cancelRelease(); selected.current = 'pen'; setTool('pen'); setSettingsOpen(true); };
   const changeBlade = (width: number, rotation: number) => {
     const current = runtime.current; if (!current || gesture.current) return;
     current.history.checkpoint(); current.engine.setBlade(width, rotation); refresh(); persist();
@@ -131,13 +127,16 @@ export function App() {
   };
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
-      if ((event.target as HTMLElement).matches('input, textarea, select') || gesture.current || !ready) return;
+      if (gesture.current || !ready) return;
+      if (event.key === 'Escape') { setKeyboardMotion(true); setSettingsOpen(false); dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); return; }
+      if ((event.target as HTMLElement).matches('input, textarea, select')) return;
+      setKeyboardMotion(true);
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') { event.preventDefault(); historyAction(event.shiftKey ? 'redo' : 'undo'); }
       else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') { event.preventDefault(); historyAction('redo'); }
+      else if (event.metaKey || event.ctrlKey || event.altKey) return;
       else if (event.key.toLowerCase() === 's') selectScraper();
       else if (event.key.toLowerCase() === 'p') selectPaint(colour.current);
       else if (event.key.toLowerCase() === 'n') selectPen();
-      else if (event.key === 'Escape') { dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); }
     };
     window.addEventListener('keydown', keyboard); return () => window.removeEventListener('keydown', keyboard);
   }, [ready]);
@@ -218,31 +217,17 @@ export function App() {
     finally { setExporting(false); }
   };
 
-  return <main className="studio">
+  return <main className="studio dock-studio" data-keyboard={keyboardMotion} onPointerDownCapture={() => setKeyboardMotion(false)}>
     <header className="header">
       <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}>scrape<span className="brand-dot">.</span></a>
       <span className="header-caption">a little paint playground</span>
       <div className="header-actions">
-        <div className="history-buttons">
-          <button className="icon-button" aria-label="Undo" title="Undo (⌘/Ctrl Z)" disabled={!historyState.undo || contact || !ready} onClick={() => historyAction('undo')}><Undo2 className="ui-icon" aria-hidden="true"/></button>
-          <button className="icon-button" aria-label="Redo" title="Redo (⌘/Ctrl Shift Z)" disabled={!historyState.redo || contact || !ready} onClick={() => historyAction('redo')}><Redo2 className="ui-icon" aria-hidden="true"/></button>
-        </div>
-        <button className="new-sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
+        <button className="new-sheet" aria-label="New sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
         <button className="export-button" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/>{exporting ? 'Exporting…' : 'Keep this one'}</button>
       </div>
     </header>
 
     <section className="workspace" aria-label="Painting desk">
-      <aside className="paint-tray" aria-label="Paint colours">
-        <div className="tray-heading"><span className="eyebrow">01 / COLOUR</span><h1>A handful<br/>of possibility.</h1></div>
-        <div className="tubes">
-          {colours.map((item, index) => <button key={item.hex} className={`tube-button ${tool === 'paint' && paint === item.hex ? 'selected' : ''}`} style={{ '--tube-angle': `${[-6, 4, -3, 5, -5, 3][index]}deg`, '--tube-colour': item.hex } as React.CSSProperties} aria-label={`Use ${item.name} paint`} aria-pressed={tool === 'paint' && paint === item.hex} disabled={!ready || contact} onClick={() => selectPaint(item.hex)}>
-            <Tube colour={item.hex}/><span className="tube-name"><i aria-hidden="true"/>{item.name}</span>
-          </button>)}
-        </div>
-        <label className="custom-colour"><span className="custom-swatch" style={{ background: paint }}/><span>Custom colour</span><input type="color" aria-label="Choose a custom paint colour" value={paint} disabled={!ready || contact} onChange={event => selectPaint(event.target.value)}/><ArrowUpRight className="ui-icon" aria-hidden="true"/></label>
-      </aside>
-
       <div className="paper-area">
         <div className={`paper-host ${ready ? 'ready' : ''}`}>
           <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the scraper and drag to scrape, or select the pen to draw clean lines." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
@@ -252,31 +237,17 @@ export function App() {
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
       </div>
-
-      <aside className="tool-tray" aria-label="Drawing tools">
-        <button className={`squeegee-button ${tool === 'scrape' ? 'selected' : ''}`} aria-label="Pick up scraper card" aria-pressed={tool === 'scrape'} disabled={!ready || contact} onClick={selectScraper}><Squeegee paint={carriedPaint}/><span>The scraper</span><small>pick it up & pull</small></button>
-        <button className={`pen-button ${tool === 'pen' ? 'selected' : ''}`} aria-label="Pick up pen" aria-pressed={tool === 'pen'} title="Pen (N)" disabled={!ready || contact} onClick={selectPen}><span className="pen-rest"><Pen colour={penColour}/></span><span>The pen</span></button>
-        {tool === 'pen' ? <div className="pen-controls">
-          <label htmlFor="pen-width">Line width <span>{penWidth}</span></label>
-          <input id="pen-width" type="range" min="1" max="12" step=".5" value={penWidth} disabled={!ready || contact} onChange={event => setPenWidth(Number(event.target.value))}/>
-          <label className="pen-colour"><span>Ink colour</span><input type="color" aria-label="Choose pen ink colour" value={penColour} disabled={!ready || contact} onChange={event => setPenColour(event.target.value)}/></label>
-        </div> : <>
-        <div className="blade-controls">
-          <label htmlFor="blade-width">Blade width <span>{Math.round(bladeWidth / W * 100)}%</span></label>
-          <input id="blade-width" type="range" min="50" max="180" step="10" value={bladeWidth} disabled={!ready || contact} onChange={event => changeBlade(Number(event.target.value), angle)}/>
-          <button className="rotate-button" disabled={!ready || contact} onClick={() => changeBlade(bladeWidth, angle === 0 ? 90 : 0)}><RotateCw className="ui-icon" aria-hidden="true"/>Turn the blade <span>{angle}°</span></button>
-        </div>
-        <button className="rag-button" aria-label="Wipe paint off the squeegee" disabled={!ready || !loaded || contact} onClick={() => { const current = runtime.current; if (current) { current.history.checkpoint(); current.engine.cleanBlade(); refresh(); persist(); } }}><span className={`rag ${loaded ? 'stained' : ''}`} aria-hidden="true"/><span>Wipe it clean</span></button>
-        </>}
-      </aside>
     </section>
 
-    <footer className="footer">
-      <div className="gesture-hint"><span className="status-dot"/><span>{tool === 'paint' ? 'Hold to squeeze. Drag to make a bead.' : tool === 'pen' ? 'Drag to draw. Lift to finish. Hold for a steady dot.' : 'Drag across the blade to pull paint. Lift to stop.'}</span><kbd>{tool === 'paint' ? 'P' : tool === 'pen' ? 'N' : 'S'}</kbd></div>
-      {storageWarning && <div className="save-status" role="status">Export to keep this painting</div>}
-      <button className="about-button" onClick={() => setCredits(!credits)}>made for making <ArrowUpRight className="ui-icon" aria-hidden="true"/></button>
-    </footer>
-    {credits && <div className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}><X className="ui-icon" aria-hidden="true"/></button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}
+    <div className="dock-guidance" role="status">{tool === 'paint' ? 'Hold to squeeze · drag to lay a bead' : tool === 'pen' ? 'Drag to draw · lift to finish' : 'Drag to pull paint · lift to stop'}</div>
+    <StudioDock tool={tool} open={settingsOpen} onOpen={setSettingsOpen} disabled={!ready || contact}
+      onSelect={next => next === 'paint' ? selectPaint(paint) : next === 'pen' ? selectPen() : selectScraper()}
+      paint={paint} onPaint={selectPaint} penColour={penColour} penWidth={penWidth} onPenColour={setPenColour} onPenWidth={setPenWidth}
+      bladeWidth={bladeWidth} angle={angle} onBlade={changeBlade} carriedPaint={carriedPaint}
+      undo={historyState.undo} redo={historyState.redo} onHistory={historyAction}
+      about={credits} onAbout={() => setCredits(!credits)}/>
+    {storageWarning && <div className="desk-meta"><div className="save-status" role="status">Export to keep this painting</div></div>}
+    {credits && <div id="about-scrape" className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}><X className="ui-icon" aria-hidden="true"/></button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}
     {error && <div className="error-message" role="alert">{error}</div>}
   </main>;
 }

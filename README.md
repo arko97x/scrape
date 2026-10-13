@@ -20,12 +20,19 @@ and repeatable squeeze/drag live at `/tests/fixtures/dispense-check.html`; they 
 not load or save the studio painting.
 
 The pen (N) draws fixed-width, round-ended ink strokes in a separate layer.
-Choose its colour and width in the tool tray. Ink stays put under the scraper,
+Choose its colour and width in the settings bar above the tool dock. Ink stays put under the scraper,
 does not grow on a held contact, and is included in undo/redo, local saves and
 PNG export. P selects paint; S selects the scraper. The selected width stays
 constant for mouse, finger and stylus.
 An isolated ink-width, held-dot, tape-margin and PNG check is available at
 `/tests/fixtures/pen-check.html`.
+
+The floating dock keeps paint, pen, scraper and undo/redo together. Selecting a
+tool opens its settings; clicking the selected tool again, or the chevron, tucks
+them away without moving the paper. Arrow keys navigate the dock; Enter or Space
+selects a tool. Escape closes settings and returns focus to the selected tool.
+Mouse hover labels include P/N/S shortcuts. Short lifts and fades provide
+feedback; keyboard shortcuts are immediate and reduced motion removes travel.
 
 ## Checks
 
@@ -40,4 +47,4 @@ Paint has a finite volume and a height field. The blade picks up paint, moves it
 
 Paint transport runs on the CPU at 480 × 600; WebGL 2 shades the paper, paint height, and edge ridges. Undo includes paint carried on the blade. The studio saves locally in IndexedDB and exports at 960 × 1200. The border mask is fixed; additional tape placement remains a future checkpoint.
 
-Mixbox © Secret Weapons supplies pigment mixing under CC BY-NC 4.0. This prototype is non-commercial; commercial use requires revisiting that dependency's licence. Attribution is also available through “made for making” in the studio.
+Mixbox © Secret Weapons supplies pigment mixing under CC BY-NC 4.0. This prototype is non-commercial; commercial use requires revisiting that dependency's licence. Attribution is also available from the info button in the studio dock.

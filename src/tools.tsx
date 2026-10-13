@@ -26,8 +26,8 @@ export function TubeArtwork({ colour }: { colour: string }) {
   </>;
 }
 
-export function Tube({ colour, small = false }: { colour: string; small?: boolean }) {
-  return <svg viewBox="0 0 200 500" className={`tube-art ${small ? 'small' : ''}`} aria-hidden="true" focusable="false" style={{ isolation: 'isolate' }}><TubeArtwork colour={colour}/></svg>;
+export function Tube({ colour }: { colour: string }) {
+  return <svg viewBox="0 0 200 500" className="tube-art" aria-hidden="true" focusable="false" style={{ isolation: 'isolate' }}><TubeArtwork colour={colour}/></svg>;
 }
 
 export function Pen({ colour }: { colour: string }) {
