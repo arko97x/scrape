@@ -23,6 +23,22 @@ type Props = {
   about: boolean; onAbout: () => void;
 };
 
+const inkColours = [
+  { name: 'dark', hex: '#344c5a' }, { name: 'tomato', hex: '#c55c43' },
+  { name: 'lake', hex: '#649295' }, { name: 'cream', hex: '#f5f1e5' },
+];
+
+/** The rainbow "any colour" swatch shared by the paint palette and the pen inks. */
+function CustomColour({ label, title, value, selected, disabled, onChange }: {
+  label: string; title: string; value: string; selected: boolean; disabled: boolean;
+  onChange: (hex: string) => void;
+}) {
+  return <label className="dock-colour custom-colour" data-selected={selected} title={title}>
+    <Palette aria-hidden="true"/>
+    <input type="color" aria-label={label} value={value} disabled={disabled} onChange={event => onChange(event.target.value)}/>
+  </label>;
+}
+
 // Two fixed nibs, like a fineliner pair, instead of a free-form slider.
 export const penWidths = [
   { name: 'Thin', width: 2.5, stroke: 1.75 },
@@ -72,18 +88,17 @@ export function StudioDock(props: Props) {
   });
   const tip = (id: string, name: string, shortcut?: string) => <span id={`tip-${id}`} className="dock-tip" role="tooltip" aria-hidden={tooltip !== id} data-visible={tooltip === id}>{name}{shortcut && <kbd>{shortcut}</kbd>}</span>;
 
-  return <div className="studio-dock">
+  return <div className="studio-dock" data-settings={props.open ? 'open' : 'closed'}>
     <div id="tool-settings" className="dock-settings" data-tool={props.tool} data-open={props.open} inert={!props.open} aria-hidden={!props.open} onKeyDown={closeSettings}>
       <div className="dock-settings-page" hidden={props.tool !== 'paint'} role="group" aria-label="Paint settings">
         <div className="dock-palette">
           {studioColours.map(item => <button key={item.hex} className="paint-swatch" title={`${item.name} paint`} aria-label={`Use ${item.name} paint`} aria-pressed={props.paint === item.hex} disabled={props.disabled} onClick={() => props.onPaint(item.hex)}><span style={{ background: item.hex }} aria-hidden="true"/></button>)}
-          <label className="dock-colour custom-paint" data-selected={!studioColours.some(item => item.hex === props.paint)} title="Custom paint colour"><Palette aria-hidden="true"/><input type="color" aria-label="Choose a custom paint colour" value={props.paint} disabled={props.disabled} onChange={event => props.onPaint(event.target.value)}/></label>
+          <CustomColour label="Choose a custom paint colour" title="Custom paint colour" value={props.paint} selected={!studioColours.some(item => item.hex === props.paint)} disabled={props.disabled} onChange={props.onPaint}/>
         </div>
       </div>
       <div className="dock-settings-page" hidden={props.tool !== 'pen'} role="group" aria-label="Pen settings">
         <div className="pen-widths" role="group" aria-label="Line width">{penWidths.map(item => <button key={item.name} className="pen-width" title={item.name} aria-label={`${item.name} line`} aria-pressed={props.penWidth === item.width} disabled={props.disabled} onClick={() => props.onPenWidth(item.width)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16c2-6 4.5-8 6.5-4.5s3.5 6.5 6 1.5S19.5 7 20 9" fill="none" stroke="currentColor" strokeWidth={item.stroke} strokeLinecap="round" strokeLinejoin="round"/></svg></button>)}</div>
-        <div className="ink-swatches" role="group" aria-label="Ink colours">{['#344c5a', '#c55c43', '#649295', '#f5f1e5'].map((hex, index) => <button key={hex} className="ink-swatch" aria-label={`Use ${['dark', 'tomato', 'lake', 'cream'][index]} ink`} aria-pressed={props.penColour === hex} disabled={props.disabled} onClick={() => props.onPenColour(hex)}><i style={{ background: hex }} aria-hidden="true"/></button>)}</div>
-        <label className="dock-colour custom-ink" style={{ background: props.penColour }}><Palette aria-hidden="true"/><input type="color" aria-label="Choose pen ink colour" value={props.penColour} disabled={props.disabled} onChange={event => props.onPenColour(event.target.value)}/></label>
+        <div className="ink-swatches" role="group" aria-label="Ink colours">{inkColours.map(item => <button key={item.hex} className="paint-swatch" title={`${item.name[0].toUpperCase()}${item.name.slice(1)} ink`} aria-label={`Use ${item.name} ink`} aria-pressed={props.penColour === item.hex} disabled={props.disabled} onClick={() => props.onPenColour(item.hex)}><span style={{ background: item.hex }} aria-hidden="true"/></button>)}<CustomColour label="Choose a custom ink colour" title="Custom ink colour" value={props.penColour} selected={!inkColours.some(item => item.hex === props.penColour)} disabled={props.disabled} onChange={props.onPenColour}/></div>
       </div>
       <div className="dock-settings-page" hidden={props.tool !== 'scrape'} role="group" aria-label="Scraper settings">
         <div className="dock-width"><label htmlFor="blade-width">Blade width <output>{Math.round(props.bladeWidth / 480 * 100)}%</output></label><input id="blade-width" type="range" min="50" max="180" step="10" value={props.bladeWidth} style={{ '--range-progress': `${(props.bladeWidth - 50) / 130 * 100}%` } as React.CSSProperties} disabled={props.disabled} onChange={event => props.onBlade(Number(event.target.value), props.angle)}/></div>
@@ -97,6 +112,7 @@ export function StudioDock(props: Props) {
       <div className="dock-tools">
         {toolInfo.map(item => <button key={item.id} className={`dock-tool dock-${item.id}`} data-tool={item.id} aria-label={`Pick up ${item.name.toLowerCase()}`} aria-pressed={props.tool === item.id} aria-keyshortcuts={item.shortcut} aria-describedby={`tip-${item.id}`} tabIndex={stop === item.id ? 0 : -1} disabled={props.disabled} {...labelEvents(item.id)} onClick={() => { hideTip(); if (props.tool === item.id) props.onOpen(!props.open); else props.onSelect(item.id); }}>
           <span className="dock-object-window"><span className="dock-object">{item.id === 'paint' ? <Tube colour={props.paint}/> : item.id === 'pen' ? <Pen colour={props.penColour}/> : <Squeegee paint={props.carriedPaint}/>}</span></span>
+          <span className="dock-tool-name" aria-hidden="true">{item.name}</span>
           {tip(item.id, item.name, item.shortcut)}
         </button>)}
       </div>
