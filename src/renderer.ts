@@ -34,6 +34,9 @@ vec4 field(vec2 p, out float coverage) {
   return result;
 }
 vec4 field(vec2 p) { float ignored; return field(p, ignored); }
+// Surface tension: thin films keep their true height, but thick paint saturates
+// into a pillow with a flat top and steep shoulders instead of a pointed cone.
+float surface(float h) { return .12 * (1. - exp(-h / .12)); }
 vec4 opticalSample(vec2 p) {
   float coverage; vec4 material = field(p, coverage);
   return vec4(material.rgb * coverage, coverage);
@@ -55,22 +58,41 @@ void main() {
   float fibre = hash(floor(p * fieldSize * vec2(.4, 1.8)));
   vec3 paper = vec3(.964, .950, .905) + (grain - .5) * .033 + (fibre - .5) * .014;
   float h = samplePaint.a;
-  float left = field(p - vec2(px.x, 0.)).a;
-  float right = field(p + vec2(px.x, 0.)).a;
-  float up = field(p - vec2(0., px.y)).a;
-  float down = field(p + vec2(0., px.y)).a;
-  vec3 normal = normalize(vec3((left - right) * 14., (up - down) * 14., 1.));
-  vec3 light = normalize(vec3(-.45, -.6, 1.4));
-  float diffuse = max(dot(normal, light), 0.);
-  float gloss = pow(max(dot(normal, normalize(light + vec3(0., 0., 1.))), 0.), 22.);
+  float relief = surface(h);
+  // Sobel over a 1.5-cell footprint: smooth enough for a rounded dome, still
+  // tight enough to keep the scraped ridges crisp.
+  vec2 s = px * 1.5;
+  float tl = surface(field(p + s * vec2(-1., -1.)).a), tc = surface(field(p + s * vec2(0., -1.)).a), tr = surface(field(p + s * vec2(1., -1.)).a);
+  float ml = surface(field(p + s * vec2(-1., 0.)).a), mr = surface(field(p + s * vec2(1., 0.)).a);
+  float bl = surface(field(p + s * vec2(-1., 1.)).a), bc = surface(field(p + s * vec2(0., 1.)).a), br = surface(field(p + s * vec2(1., 1.)).a);
+  vec2 slope = vec2((tl + 2. * ml + bl) - (tr + 2. * mr + br), (tl + 2. * tc + tr) - (bl + 2. * bc + br));
+  vec3 normal = normalize(vec3(slope * 9., 1.));
+  // A lowish light so flat tops stay evenly lit and only the shoulders glint.
+  vec3 light = normalize(vec3(-.5, -.65, .9));
+  vec3 halfway = normalize(light + vec3(0., 0., 1.));
+  // 1 on flat paint, below 1 on the shoulder turned away from the light.
+  float lit = max(dot(normal, light), 0.) / light.z;
+  float facing = max(dot(normal, halfway), 0.);
+  // A tight glint on the lit shoulder plus a broad sheen reads as wet acrylic.
+  float specular = pow(facing, 60.) * .5 + pow(facing, 9.) * .06;
+  // Soft cast shadow: blurred relief sampled toward the light, so raised paint
+  // throws a shadow down and to the right onto paper and onto thinner paint.
+  vec2 toward = normalize(light.xy) * px;
+  float caster = 0.;
+  for (int i = 1; i <= 4; i++) {
+    vec2 at = p + toward * float(i) * 1.6;
+    caster += surface(field(at).a) + .5 * (surface(field(at + vec2(px.x, -px.y) * 1.5).a) + surface(field(at - vec2(px.x, -px.y) * 1.5).a));
+  }
+  float shadow = max(0., caster / 8. - relief);
   // Opaque pigment still covers paper in a thin scraped film; only depleted tails
   // become translucent. The previous threshold made thin paint look prematurely dry.
-  float castShadow = max(0., field(p - px * vec2(2., 2.)).a - h);
-  paper *= 1. - min(.14, castShadow * .65);
-  vec3 colour = samplePaint.rgb * (.78 + diffuse * .22);
-  // A slightly broader reflection reads as wet acrylic on the flat ribbon,
-  // while the actual raised shoulders catch the stronger glints.
-  colour += vec3(gloss * .16 * smoothstep(.004, .025, h));
+  paper *= 1. - min(.14, shadow * 1.4);
+  // Shade toward a deeper version of the pigment rather than grey, so yellow
+  // turns golden in shadow instead of olive.
+  vec3 base = samplePaint.rgb;
+  float shade = clamp((1. - lit) * .55 + shadow * 1.2, 0., .6);
+  vec3 colour = mix(base, base * base * .9, shade) * (1. + max(0., lit - 1.) * .25);
+  colour += vec3(specular * smoothstep(.004, .03, h));
   colour += (grain - .5) * .008;
   outputColour = vec4(mix(paper, colour, opacity), 1.);
 }`;
