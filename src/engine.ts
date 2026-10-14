@@ -17,6 +17,9 @@ export type PaintSnapshot = {
 };
 
 export const linearBlend: Blend = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t) as Colour;
+/** Angles in degrees, kept within (-180, 180]. */
+const levelAngle = (degrees: number) => Math.abs(Math.sin(degrees * Math.PI / 90)) < 1e-9;
+export const normaliseAngle = (degrees: number) => { const angle = ((degrees % 360) + 540) % 360 - 180; return angle === -180 ? 180 : angle; };
 
 /** A material field: RGB pigment colour and paint height, independent of screen size. */
 export class PaintEngine {
@@ -32,6 +35,11 @@ export class PaintEngine {
   private previous: Point | null = null;
   private previousCells: number[] = [];
   private bladeCells = new Int32Array(256);
+  private contactCells = new Int32Array(256);
+  private crossed = new Int32Array(8192);
+  private crossedCount = 0;
+  private readonly checked: Uint32Array;
+  private stamp = 0;
   private edgeProfile = new Float32Array(256).fill(1);
   private notchLane = new Uint8Array(256);
   private laneRow = new Int32Array(256);
@@ -47,6 +55,7 @@ export class PaintEngine {
   constructor(readonly width: number, readonly height: number, private blend: Blend = linearBlend) {
     this.pixels = new Float32Array(width * height * 4);
     this.resistance = new Float32Array(width * height);
+    this.checked = new Uint32Array(width * height);
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) this.resistance[y * width + x] = paperResistance(x, y);
     this.margin = Math.round(Math.min(width, height) * 0.045);
     this.dirty = { x: 0, y: 0, right: width, bottom: height };
@@ -153,7 +162,7 @@ export class PaintEngine {
     const mobility = 0.40 * Math.min(1, pressure * 4);
     this.sidewaysFlux.fill(0);
     for (let lane = 0; lane < this.bladeWidth - 1; lane++) {
-      if (this.bladeCells[lane] < 0 || this.bladeCells[lane + 1] < 0) continue;
+      if (this.contactCells[lane] < 0 || this.contactCells[lane + 1] < 0) continue;
       const left = before[lane * 4 + 3], right = before[(lane + 1) * 4 + 3];
       const difference = left - right;
       if ((difference > 0 && !this.allowedRibbon[lane + 1]) || (difference < 0 && !this.allowedRibbon[lane])) continue;
@@ -186,7 +195,7 @@ export class PaintEngine {
     for (let start = 0; start < this.bladeWidth;) {
       const index = start * 4;
       const initial = before[index + 3];
-      if (this.bladeCells[start] < 0 || initial <= .015) {
+      if (this.contactCells[start] < 0 || initial <= .015) {
         this.ribbonFilm[start] = .0135 * initial / (initial + 1.2) * this.edgeProfile[start];
         start++; continue;
       }
@@ -195,7 +204,7 @@ export class PaintEngine {
       while (end + 1 < this.bladeWidth) {
         const next = (end + 1) * 4;
         const difference = Math.max(Math.abs(before[next] - anchor[0]), Math.abs(before[next + 1] - anchor[1]), Math.abs(before[next + 2] - anchor[2]));
-        if (this.bladeCells[end + 1] < 0 || before[next + 3] <= .015 || difference > .10) break;
+        if (this.contactCells[end + 1] < 0 || before[next + 3] <= .015 || difference > .10) break;
         end++;
       }
       let volume = 0, weight = 0;
@@ -220,7 +229,7 @@ export class PaintEngine {
       const mean = volume / (end - start + 1);
       const film = .0135 * mean / (mean + 1.2);
       for (let lane = start; lane <= end; lane++) {
-        const cell = this.bladeCells[lane];
+        const cell = this.contactCells[lane];
         const x = cell % this.width, y = Math.floor(cell / this.width);
         const distance = x * this.bladeNormal.x + y * this.bladeNormal.y;
         // Ridges form in the air gap of a notch, so paper texture doesn't reach them.
@@ -246,93 +255,176 @@ export class PaintEngine {
     }
   }
 
-  scrape(to: Point) {
+  /** Picks up the paint each lane reaches on a level or upright card. */
+  private pickUpLanes(cx: number, cy: number, tx: number, ty: number) {
+    const visited = new Set<number>();
+    let pressure = 0, worked = false;
+    for (let lane = 0; lane < this.bladeWidth; lane++) {
+      const offset = lane - (this.bladeWidth - 1) / 2;
+      const x = Math.round(cx + tx * offset), y = Math.round(cy + ty * offset);
+      const cell = y * this.width + x;
+      const old = this.previousCells[lane];
+      this.previousCells[lane] = cell;
+      this.contactCells[lane] = this.inside(x, y) ? cell : -1;
+      if (old === cell || visited.has(cell) || !this.inside(x, y)) continue;
+      // A diagonal drag is split into sub-pixel steps, so a lane can slide
+      // sideways within a row it has already worked. A comb's ridges would show
+      // that as beads, so each comb lane works a given row only once.
+      if (this.blade === 'comb') {
+        const row = Math.round(x * this.bladeNormal.x + y * this.bladeNormal.y);
+        if (row === this.laneRow[lane]) continue;
+        this.laneRow[lane] = row;
+      }
+      visited.add(cell);
+      this.bladeCells[lane] = cell; worked = true;
+      pressure = Math.max(pressure, this.pickUp(cell, lane));
+    }
+    return { pressure, worked };
+  }
+
+  /** On a slanted or turning card, rounding each lane to a cell leaves holes and
+   *  doubles. Instead, every cell whose centre the edge has just passed over is
+   *  worked once, by the lane nearest it. */
+  private pickUpCrossed(px: number, py: number, ptx: number, pty: number, cx: number, cy: number, tx: number, ty: number) {
+    const half = (this.bladeWidth - 1) / 2, stamp = ++this.stamp;
+    let pressure = 0;
+    this.crossedCount = 0;
+    for (let lane = 0; lane < this.bladeWidth; lane++) {
+      const rx = Math.round(cx + tx * (lane - half)), ry = Math.round(cy + ty * (lane - half));
+      const here = ry * this.width + rx;
+      this.previousCells[lane] = here;
+      this.contactCells[lane] = this.inside(rx, ry) ? here : -1;
+      // The edge moves at most half a cell per step, so what it crossed is next to a lane.
+      for (let y = ry - 1; y <= ry + 1; y++) for (let x = rx - 1; x <= rx + 1; x++) {
+        if (!this.inside(x, y)) continue;
+        const cell = y * this.width + x;
+        if (this.checked[cell] === stamp) continue;
+        this.checked[cell] = stamp;
+        const before = (x - px) * -pty + (y - py) * ptx, after = (x - cx) * -ty + (y - cy) * tx;
+        if ((before > 0) === (after > 0)) continue;
+        const along = (x - cx) * tx + (y - cy) * ty;
+        if (Math.abs(along) > half + .5) continue;
+        const owner = Math.min(this.bladeWidth - 1, Math.max(0, Math.round(along + half)));
+        this.crossed[this.crossedCount * 2] = cell; this.crossed[this.crossedCount * 2 + 1] = owner; this.crossedCount++;
+        this.bladeCells[owner] = cell;
+        pressure = Math.max(pressure, this.pickUp(cell, owner));
+      }
+    }
+    return { pressure, worked: this.crossedCount > 0 };
+  }
+
+  /** Lifts a cell's paint onto a lane, leaving a small residual film on the paper. */
+  private pickUp(cell: number, lane: number) {
+    const index = cell * 4, load = lane * 4;
+    const amount = this.pixels[index + 3];
+    // Flatten the mound, rather than leaving a proportion of its original dome
+    // sitting on top of the new ribbon.
+    const picked = amount - Math.min(amount * .06, .006);
+    if (picked > 0) {
+      this.add(this.carry, load, [this.pixels[index], this.pixels[index + 1], this.pixels[index + 2]], picked);
+      this.pixels[index + 3] = amount - picked;
+      this.mark(cell % this.width, Math.floor(cell / this.width));
+      if (picked > .001) this.wetSource[lane] = Math.max(this.wetSource[lane], Math.min(255, 1 + Math.round(picked * 24)));
+    }
+    return picked;
+  }
+
+  /** Lays each crossed cell's film from the lane that worked it. The cell is behind
+   *  the edge now, so the film stays put rather than being picked up again. */
+  private layCrossed() {
+    for (let i = 0; i < this.crossedCount; i++) {
+      const cell = this.crossed[i * 2], load = this.crossed[i * 2 + 1] * 4;
+      const laid = Math.min(this.carry[load + 3], this.ribbonFilm[this.crossed[i * 2 + 1]]);
+      if (laid <= 0) continue;
+      this.add(this.pixels, cell * 4, [this.carry[load], this.carry[load + 1], this.carry[load + 2]], laid);
+      this.carry[load + 3] -= laid;
+      this.mark(cell % this.width, Math.floor(cell / this.width));
+    }
+  }
+
+  /** Lays film from each lane that reached a new cell on a level or upright card. */
+  private layLanes(cx: number, cy: number, tx: number, ty: number) {
+    for (let lane = 0; lane < this.bladeWidth; lane++) {
+      const cell = this.bladeCells[lane];
+      if (cell < 0) continue;
+      const index = cell * 4, load = lane * 4;
+      const available = this.carry[load + 3];
+      const laid = Math.min(available, this.ribbonFilm[lane]);
+      if (laid > 0) {
+        const pigment: Colour = [this.carry[load], this.carry[load + 1], this.carry[load + 2]];
+        const offset = lane - (this.bladeWidth - 1) / 2;
+        const cellX = cell % this.width, cellY = Math.floor(cell / this.width);
+        // Preserve the transport row so newly laid film is not fed back into
+        // the next pickup. Only lateral coverage follows the subcell blade
+        // position; this removes snapping at the ribbon's moving shoulders.
+        const lateral = (cx + tx * offset - cellX) * tx + (cy + ty * offset - cellY) * ty;
+        const x = cellX + tx * lateral, y = cellY + ty * lateral;
+        // Local wetting shifts the contact line by at most 1.6 field pixels.
+        // Fractional coverage moves actual pigment; lighting, undo and later
+        // scrapes all see the same continuous shoulder.
+        const drift = 1.6 * (2 * materialNoise(x / 58, y / 43, 2767) - 1);
+        const px = x + tx * drift, py = y + ty * drift;
+        const ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
+        const coverage: [number, number, number][] = [
+          [ix, iy, (1 - fx) * (1 - fy)], [ix + 1, iy, fx * (1 - fy)],
+          [ix, iy + 1, (1 - fx) * fy], [ix + 1, iy + 1, fx * fy],
+        ];
+        const supported = coverage.filter(([sx, sy, weight]) => weight > 0 && this.inside(sx, sy));
+        const total = supported.reduce((sum, [, , weight]) => sum + weight, 0);
+        if (total > 0) {
+          for (const [sx, sy, weight] of supported) {
+            this.add(this.pixels, (sy * this.width + sx) * 4, pigment, laid * weight / total);
+            this.mark(sx, sy);
+          }
+        } else { this.add(this.pixels, index, pigment, laid); }
+        this.carry[load + 3] -= laid;
+        this.mark(cell % this.width, Math.floor(cell / this.width));
+      }
+    }
+  }
+
+  /** Turns the card in the air. Unlike setBlade, it keeps the paint it carries. */
+  turn(angle: number) { if (!this.previous && Number.isFinite(angle)) this.angle = normaliseAngle(angle); }
+
+  /** Pulls the card's centre to `to` while it turns to `angle`, the short way round. */
+  scrape(to: Point, angle = this.angle) {
     if (!this.previous) { this.beginScrape(to); return; }
-    const from = this.previous;
+    const from = this.previous, start = this.angle;
     const dx = to.x - from.x, dy = to.y - from.y;
-    const radians = this.angle * Math.PI / 180;
-    const tx = Math.cos(radians), ty = Math.sin(radians);
-    this.bladeNormal = { x: -ty, y: tx };
-    // A blade moving along its own edge doesn't make a normal scraping pass.
-    if (Math.abs(-ty * dx + tx * dy) < 0.001) { this.previous = to; return; }
-    const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy)));
+    const turn = Number.isFinite(angle) ? normaliseAngle(angle - start) : 0;
+    if (Math.abs(turn) < 1e-6) {
+      const radians = start * Math.PI / 180;
+      const tx = Math.cos(radians), ty = Math.sin(radians);
+      this.bladeNormal = { x: -ty, y: tx };
+      // A blade moving along its own edge doesn't make a normal scraping pass.
+      if (Math.abs(-ty * dx + tx * dy) < 0.001) { this.previous = to; return; }
+    }
+    // No point on the card may move more than a cell per step. An end moves at
+    // most as far as the centre plus its own swing about the centre. A slanted
+    // or turning card moves half as far, so the cells it crosses stay next to it.
+    const sweep = Math.abs(turn) * Math.PI / 180 * this.bladeWidth / 2;
+    const slanted = Math.abs(turn) >= 1e-6 || !levelAngle(start);
+    const steps = Math.max(1, Math.ceil((Math.hypot(dx, dy) + sweep) * (slanted ? 2 : 1)));
+    let px = from.x, py = from.y, ptx = Math.cos(start * Math.PI / 180), pty = Math.sin(start * Math.PI / 180);
     for (let step = 1; step <= steps; step++) {
       const cx = from.x + dx * step / steps, cy = from.y + dy * step / steps;
-      const visited = new Set<number>();
+      const radians = (start + turn * step / steps) * Math.PI / 180;
+      const tx = Math.cos(radians), ty = Math.sin(radians);
+      this.bladeNormal = { x: -ty, y: tx };
       this.bladeCells.fill(-1);
-      let pressure = 0;
-      for (let lane = 0; lane < this.bladeWidth; lane++) {
-        const offset = lane - (this.bladeWidth - 1) / 2;
-        const x = Math.round(cx + tx * offset), y = Math.round(cy + ty * offset);
-        const cell = y * this.width + x;
-        const old = this.previousCells[lane];
-        this.previousCells[lane] = cell;
-        if (old === cell || visited.has(cell) || !this.inside(x, y)) continue;
-        // A diagonal drag is split into sub-pixel steps, so a lane can slide
-        // sideways within a row it has already worked. A comb's ridges would show
-        // that as beads, so each comb lane works a given row only once.
-        if (this.blade === 'comb') {
-          const row = Math.round(x * this.bladeNormal.x + y * this.bladeNormal.y);
-          if (row === this.laneRow[lane]) continue;
-          this.laneRow[lane] = row;
-        }
-        visited.add(cell);
-        this.bladeCells[lane] = cell;
-        const index = cell * 4, load = lane * 4;
-        const amount = this.pixels[index + 3];
-        // Flatten the mound, rather than leaving a proportion of its original dome
-        // sitting on top of the new ribbon. A small residual film stays on the paper.
-        const picked = amount - Math.min(amount * .06, .006);
-        if (picked > 0) {
-          this.add(this.carry, load, [this.pixels[index], this.pixels[index + 1], this.pixels[index + 2]], picked);
-          this.pixels[index + 3] = amount - picked;
-          this.mark(x, y);
-          if (picked > .001) this.wetSource[lane] = Math.max(this.wetSource[lane], Math.min(255, 1 + Math.round(picked * 24)));
-        }
-        pressure = Math.max(pressure, picked);
-      }
+      const { pressure, worked } = slanted ? this.pickUpCrossed(px, py, ptx, pty, cx, cy, tx, ty) : this.pickUpLanes(cx, cy, tx, ty);
+      // A slanted card's lanes don't all reach a new cell on the same step. Lanes
+      // that didn't are still on the paper, so the ribbon they carry stays in one
+      // piece. A step where nothing new is worked does nothing, as for a level card.
+      if (!worked) this.contactCells.fill(-1);
       this.updateWetFootprint();
       this.squeezeAlongBlade(pressure);
       this.levelCarriedRibbons();
-      for (let lane = 0; lane < this.bladeWidth; lane++) {
-        const cell = this.bladeCells[lane];
-        if (cell < 0) continue;
-        const index = cell * 4, load = lane * 4;
-        const available = this.carry[load + 3];
-        const laid = Math.min(available, this.ribbonFilm[lane]);
-        if (laid > 0) {
-          const pigment: Colour = [this.carry[load], this.carry[load + 1], this.carry[load + 2]];
-          const offset = lane - (this.bladeWidth - 1) / 2;
-          const cellX = cell % this.width, cellY = Math.floor(cell / this.width);
-          // Preserve the transport row so newly laid film is not fed back into
-          // the next pickup. Only lateral coverage follows the subcell blade
-          // position; this removes snapping at the ribbon's moving shoulders.
-          const lateral = (cx + tx * offset - cellX) * tx + (cy + ty * offset - cellY) * ty;
-          const x = cellX + tx * lateral, y = cellY + ty * lateral;
-          // Local wetting shifts the contact line by at most 1.6 field pixels.
-          // Fractional coverage moves actual pigment; lighting, undo and later
-          // scrapes all see the same continuous shoulder.
-          const drift = 1.6 * (2 * materialNoise(x / 58, y / 43, 2767) - 1);
-          const px = x + tx * drift, py = y + ty * drift;
-          const ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
-          const coverage: [number, number, number][] = [
-            [ix, iy, (1 - fx) * (1 - fy)], [ix + 1, iy, fx * (1 - fy)],
-            [ix, iy + 1, (1 - fx) * fy], [ix + 1, iy + 1, fx * fy],
-          ];
-          const supported = coverage.filter(([sx, sy, weight]) => weight > 0 && this.inside(sx, sy));
-          const total = supported.reduce((sum, [, , weight]) => sum + weight, 0);
-          if (total > 0) {
-            for (const [sx, sy, weight] of supported) {
-              this.add(this.pixels, (sy * this.width + sx) * 4, pigment, laid * weight / total);
-              this.mark(sx, sy);
-            }
-          } else { this.add(this.pixels, index, pigment, laid); }
-          this.carry[load + 3] -= laid;
-          this.mark(cell % this.width, Math.floor(cell / this.width));
-        }
-      }
+      if (slanted) this.layCrossed(); else this.layLanes(cx, cy, tx, ty);
+      px = cx; py = cy; ptx = tx; pty = ty;
     }
     this.previous = to;
+    this.angle = normaliseAngle(start + turn);
   }
 
   cleanBlade() {
