@@ -16,7 +16,7 @@
 .dock-studio .paper-area { width: 100%; }
 .dock-studio .paper-host { width: min(calc(100% - 60px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--safe-bottom)) * .8)); }
 .dock-studio .paper-invitation { font-size: clamp(23px, 3vw, 32px); }
-.dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 14px + var(--safe-bottom)); transform: translateX(-50%); font-size: 10px; color: #78806f; white-space: nowrap; pointer-events: none; }
+.dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 20px + var(--safe-bottom)); transform: translateX(-50%); font-size: 14px; font-weight: 600; color: #6b7462; white-space: nowrap; pointer-events: none; }
 .desk-meta { position: fixed; right: 32px; bottom: calc(24px + var(--safe-bottom)); font-size: 10px; color: #78806f; }
 .dock-studio .header-actions button, .dock-studio .error-message, .dock-studio kbd { border-radius: var(--ui-radius); }
 
@@ -96,6 +96,7 @@
 .dock-choices { display: flex; gap: 4px; padding-right: 10px; }
 .dock-choice { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: var(--ui-radius); color: #8a9483; transition: background-color 125ms var(--ease-out), color 125ms var(--ease-out); }
 .dock-choice svg { width: 26px; height: 26px; }
+.dock-choice .card-icon { width: 32px; height: 28px; }
 .dock-choice[aria-pressed=true] { background: #e2e7d9; color: #344b39; }
 .dock-choice:disabled { opacity: .45; }
 .ink-swatches { display: flex; align-items: center; gap: 2px; border-left: 1px solid #7f89732b; padding-left: 10px; }
@@ -138,7 +139,7 @@
   .ink-swatches { padding-left: 8px; }
   .dock-choice { width: 40px; }
   .dock-choices { padding-right: 8px; gap: 2px; }
-  .dock-guidance { font-size: 9px; }
+  .dock-guidance { font-size: 12px; }
 }
 @media (max-width: 360px) {
   .dock-tool { width: 54px; }

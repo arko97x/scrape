@@ -53,6 +53,7 @@ export const penWidths = [
 ] as const;
 
 // A plain card pulls paint flat; a comb card's teeth leave ridged stripes.
+// The cards are short and wide, so their buttons crop the viewBox to the glyph.
 const scraperCards: { kind: BladeKind; name: string; icon: string }[] = [
   { kind: 'flat', name: 'Flat', icon: 'M4 9Q4 7 6 7H18Q20 7 20 9V18H4Z' },
   { kind: 'comb', name: 'Comb', icon: 'M4 9Q4 7 6 7H18Q20 7 20 9V18H18.6V14.5H17.56V18H16.16V14.5H15.13V18H13.73V14.5H12.7V18H11.3V14.5H10.26V18H8.86V14.5H7.83V18H6.43V14.5H5.4V18H4Z' },
@@ -116,7 +117,7 @@ export function StudioDock(props: Props) {
         <div className="ink-swatches" role="group" aria-label="Ink colours">{inkColours.map(item => { const label = settingLabel(`ink-${item.hex}`, `${item.name[0].toUpperCase()}${item.name.slice(1)} ink`); return <button key={item.hex} className="paint-swatch" aria-label={`Use ${item.name} ink`} aria-describedby={label.describedBy} aria-pressed={props.penColour === item.hex} disabled={props.disabled} {...label.events} onClick={() => props.onPenColour(item.hex)}><span className="swatch-dot" style={{ background: item.hex }} aria-hidden="true"/>{label.tip}</button>; })}<CustomColour label="Choose a custom ink colour" value={props.penColour} selected={!inkColours.some(item => item.hex === props.penColour)} disabled={props.disabled} onChange={props.onPenColour} {...settingLabel('ink-custom', 'Any colour')}/></div>
       </div>
       <div className="dock-settings-page" hidden={props.tool !== 'scrape'} role="group" aria-label="Scraper settings">
-        <div className="dock-choices" role="group" aria-label="Scraper card">{scraperCards.map(item => { const label = settingLabel(`card-${item.kind}`, item.name); return <button key={item.kind} className="dock-choice" aria-label={`${item.name} scraper`} aria-describedby={label.describedBy} aria-pressed={props.blade === item.kind} disabled={props.disabled} {...label.events} onClick={() => props.onBlade(props.bladeWidth, props.angle, item.kind)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d={item.icon} fill="currentColor" stroke="currentColor" strokeWidth=".8" strokeLinejoin="round"/></svg>{label.tip}</button>; })}</div>
+        <div className="dock-choices" role="group" aria-label="Scraper card">{scraperCards.map(item => { const label = settingLabel(`card-${item.kind}`, item.name); return <button key={item.kind} className="dock-choice" aria-label={`${item.name} scraper`} aria-describedby={label.describedBy} aria-pressed={props.blade === item.kind} disabled={props.disabled} {...label.events} onClick={() => props.onBlade(props.bladeWidth, props.angle, item.kind)}><svg className="card-icon" viewBox="3 4.5 18 16" aria-hidden="true"><path d={item.icon} fill="currentColor" stroke="currentColor" strokeWidth=".8" strokeLinejoin="round"/></svg>{label.tip}</button>; })}</div>
         <div className="settings-actions">
           <button className="dock-action turn-action" aria-label={`Turn blade ${props.angle}°`} aria-describedby="tip-turn" disabled={props.disabled} {...labelEvents('turn', false)} onClick={() => props.onBlade(props.bladeWidth, props.angle === 0 ? 90 : 0)}><RotateCw className="ui-icon" aria-hidden="true"/><span className="rotation-label">Turn</span><span className="angle-value">{props.angle}°</span>{tip('turn', 'Turn the card')}</button>
         </div>
