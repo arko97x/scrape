@@ -6,6 +6,17 @@
     <meta name="theme-color" content="#e9e3d7" />
     <meta name="description" content="A little studio for scrape painting. Squeeze some colour, pull a squeegee, and see what happens." />
     <title>Scrape — a little paint playground</title>
+    <script>
+      // Decided once, from the device rather than the window: Safari resizes
+      // the window as its toolbars come and go, and a layout keyed to that
+      // size can flip back and forth while an iPad turns.
+      (function () {
+        var root = document.documentElement;
+        if (!window.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
+        root.setAttribute('data-touch', '');
+        if (Math.min(screen.width, screen.height) >= 600) root.setAttribute('data-tablet', '');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
