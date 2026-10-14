@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PaintEngine, PaintHistory } from '../src/engine.ts';
 import { VISIBLE_FILM_HEIGHT } from '../src/material.ts';
+import { combGaps } from '../src/squeegee-geometry.ts';
 
 const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < Math.max(.001, expected * .00001), `${actual} ≈ ${expected}`);
 const red: [number, number, number] = [.9, .1, .1];
@@ -147,4 +148,21 @@ test('beads remain continuous even when input events are far apart', () => {
   engine.bead({ x: 30, y: 40 }, { x: 110, y: 40 }, red, 6, 240);
   near(engine.totalMass(), 240);
   for (let x = 35; x <= 109; x++) assert.ok(engine.pixels[(40 * 140 + x) * 4 + 3] > 0);
+});
+
+test('a comb extrudes ridges that keep going past the paint, with thin grooves between, and conserves volume', () => {
+  const engine = new PaintEngine(140, 260); engine.setBlade(100, 0, 'comb');
+  for (let y = 40; y < 90; y++) for (let x = 15; x < 125; x++) engine.pixels.set([...red, .25], (y * 140 + x) * 4);
+  const before = engine.totalMass();
+  engine.beginScrape({ x: 70, y: 30 }); engine.scrape({ x: 70, y: 240 }); engine.endScrape();
+  near(engine.totalMass(), before);
+  // Lane centres map to x = 70 + lane - 49.5; compare a middle notch with its neighbouring tooth.
+  const [from, to] = combGaps[Math.floor(combGaps.length / 2)];
+  const height = (fraction: number, y: number) => engine.pixels[(y * 140 + Math.round(70 + fraction * 100 - 50)) * 4 + 3];
+  for (const y of [110, 150]) {
+    const ridge = height((from + to) / 2, y), groove = height(from - .02, y);
+    assert.ok(ridge > VISIBLE_FILM_HEIGHT * 4, `a ridge is still standing ${y - 90} pixels past the paint (${ridge})`);
+    assert.ok(ridge > groove * 3, `the ridge stands above its groove (${ridge} vs ${groove})`);
+  }
+  assert.equal(engine.snapshot().blade, 'comb');
 });

@@ -1,5 +1,6 @@
 import { bladeContact, materialHash, materialNoise, paperResistance } from './surface';
 import { copyInk, validInk, type InkStroke } from './ink';
+import { combGaps, type BladeKind } from './squeegee-geometry';
 
 export type Colour = [number, number, number];
 export type Point = { x: number; y: number };
@@ -10,6 +11,7 @@ export type PaintSnapshot = {
   discarded: number;
   bladeWidth: number;
   angle: number;
+  blade?: BladeKind;
   wetSource?: Uint8Array;
   ink?: InkStroke[];
 };
@@ -25,10 +27,14 @@ export class PaintEngine {
   inkRevision = 0;
   bladeWidth = 100;
   angle = 0;
+  blade: BladeKind = 'flat';
   discarded = 0;
   private previous: Point | null = null;
   private previousCells: number[] = [];
   private bladeCells = new Int32Array(256);
+  private edgeProfile = new Float32Array(256).fill(1);
+  private notchLane = new Uint8Array(256);
+  private laneRow = new Int32Array(256);
   private loadBeforeSqueeze = new Float32Array(256 * 4);
   private sidewaysFlux = new Float64Array(255);
   private ribbonFilm = new Float32Array(256);
@@ -117,7 +123,7 @@ export class PaintEngine {
     }
   }
 
-  beginScrape(point: Point) { this.previous = point; this.previousCells = []; }
+  beginScrape(point: Point) { this.previous = point; this.previousCells = []; this.laneRow.fill(-1 << 30); }
   endScrape() { this.previous = null; this.previousCells = []; }
 
   private updateWetFootprint() {
@@ -181,7 +187,7 @@ export class PaintEngine {
       const index = start * 4;
       const initial = before[index + 3];
       if (this.bladeCells[start] < 0 || initial <= .015) {
-        this.ribbonFilm[start] = .0135 * initial / (initial + 1.2);
+        this.ribbonFilm[start] = .0135 * initial / (initial + 1.2) * this.edgeProfile[start];
         start++; continue;
       }
       const anchor: Colour = [before[index], before[index + 1], before[index + 2]];
@@ -217,10 +223,26 @@ export class PaintEngine {
         const cell = this.bladeCells[lane];
         const x = cell % this.width, y = Math.floor(cell / this.width);
         const distance = x * this.bladeNormal.x + y * this.bladeNormal.y;
-        const contact = this.resistance[cell] * bladeContact(lane, distance);
-        this.ribbonFilm[lane] = film * edgeWeight(lane, start, end) * contact;
+        // Ridges form in the air gap of a notch, so paper texture doesn't reach them.
+        const contact = this.notchLane[lane] ? 1 : this.resistance[cell] * bladeContact(lane, distance);
+        this.ribbonFilm[lane] = film * edgeWeight(lane, start, end) * contact * this.edgeProfile[lane];
       }
       start = end + 1;
+    }
+  }
+
+  /** How much film each lane lays relative to a flat card. A comb's teeth
+   * pull paint thin into grooves, while each notch extrudes a rounded ridge
+   * from the load the comb pushes ahead of it.
+   */
+  private updateEdgeProfile() {
+    for (let lane = 0; lane < this.bladeWidth; lane++) {
+      this.notchLane[lane] = 0;
+      if (this.blade !== 'comb') { this.edgeProfile[lane] = 1; continue; }
+      const position = (lane + .5) / this.bladeWidth;
+      const notch = combGaps.find(([from, to]) => position >= from && position < to);
+      this.notchLane[lane] = notch ? 1 : 0;
+      this.edgeProfile[lane] = notch ? .6 + 4.4 * Math.sin(Math.PI * (position - notch[0]) / (notch[1] - notch[0])) : .35;
     }
   }
 
@@ -246,6 +268,14 @@ export class PaintEngine {
         const old = this.previousCells[lane];
         this.previousCells[lane] = cell;
         if (old === cell || visited.has(cell) || !this.inside(x, y)) continue;
+        // A diagonal drag is split into sub-pixel steps, so a lane can slide
+        // sideways within a row it has already worked. A comb's ridges would show
+        // that as beads, so each comb lane works a given row only once.
+        if (this.blade === 'comb') {
+          const row = Math.round(x * this.bladeNormal.x + y * this.bladeNormal.y);
+          if (row === this.laneRow[lane]) continue;
+          this.laneRow[lane] = row;
+        }
         visited.add(cell);
         this.bladeCells[lane] = cell;
         const index = cell * 4, load = lane * 4;
@@ -311,12 +341,14 @@ export class PaintEngine {
     this.wetSource.fill(0);
   }
 
-  setBlade(width: number, angle: number) {
+  setBlade(width: number, angle: number, blade: BladeKind = this.blade) {
     if (this.previous) return;
-    // Clearing before a size/orientation change prevents hidden paint lanes from reappearing.
+    // Clearing before a size/orientation/card change prevents hidden paint lanes from reappearing.
     this.cleanBlade();
     this.bladeWidth = Math.max(24, Math.min(240, Math.round(width)));
     this.angle = angle;
+    this.blade = blade;
+    this.updateEdgeProfile();
   }
 
   surfaceMass() { let sum = 0; for (let i = 3; i < this.pixels.length; i += 4) sum += this.pixels[i]; return sum; }
@@ -324,7 +356,7 @@ export class PaintEngine {
   totalMass() { return this.surfaceMass() + this.carriedMass() + this.discarded; }
 
   snapshot(): PaintSnapshot {
-    return { pixels: this.pixels.slice(), carry: this.carry.slice(), discarded: this.discarded, bladeWidth: this.bladeWidth, angle: this.angle, wetSource: this.wetSource.slice(), ink: copyInk(this.ink) };
+    return { pixels: this.pixels.slice(), carry: this.carry.slice(), discarded: this.discarded, bladeWidth: this.bladeWidth, angle: this.angle, blade: this.blade, wetSource: this.wetSource.slice(), ink: copyInk(this.ink) };
   }
 
   restore(snapshot: PaintSnapshot) {
@@ -336,7 +368,7 @@ export class PaintEngine {
     this.wetSource.fill(0);
     if (snapshot.wetSource?.length === this.wetSource.length) this.wetSource.set(snapshot.wetSource);
     else for (let lane = 0; lane < this.wetSource.length; lane++) this.wetSource[lane] = snapshot.carry[lane * 4 + 3] > .015 ? 1 : 0;
-    this.discarded = snapshot.discarded; this.bladeWidth = snapshot.bladeWidth; this.angle = snapshot.angle;
+    this.discarded = snapshot.discarded; this.bladeWidth = snapshot.bladeWidth; this.angle = snapshot.angle; this.blade = snapshot.blade ?? 'flat'; this.updateEdgeProfile();
     this.endScrape(); this.dirty = { x: 0, y: 0, right: this.width, bottom: this.height };
   }
 

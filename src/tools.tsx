@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { BladePaintBand } from './blade-paint';
-import { squeegeeGeometry } from './squeegee-geometry';
+import { combGaps, squeegeeGeometry, type BladeKind } from './squeegee-geometry';
 
 // One photographic atlas keeps the overhead camera and upper-left light
 // consistent. Each crop puts the exposed nozzle at (100, 494), including
@@ -48,11 +48,17 @@ export function Pen({ colour }: { colour: string }) {
   </svg>;
 }
 
-export function Squeegee({ paint = [], pose = 'resting' }: { paint?: BladePaintBand[]; pose?: 'resting' | 'working' }) {
+export function Squeegee({ paint = [], pose = 'resting', blade = 'flat' }: { paint?: BladePaintBand[]; pose?: 'resting' | 'working'; blade?: BladeKind }) {
   const id = useId().replace(/:/g, '');
   const { width, height, bladeLeft, bladeRight, contactY, edgeThickness } = squeegeeGeometry;
   const bladeWidth = bladeRight - bladeLeft;
   const working = pose === 'working';
+  // A comb card has notches cut up into its working edge between the teeth.
+  const notchDepth = 100;
+  const notches = blade === 'comb' ? combGaps.map(([from, to]) => [bladeLeft + from * bladeWidth, bladeLeft + to * bladeWidth]) : [];
+  const notchRound = 10;
+  const notchPath = (x1: number, x2: number) => `M${x1} ${contactY + 60}V${contactY - notchDepth + notchRound}Q${x1} ${contactY - notchDepth} ${x1 + notchRound} ${contactY - notchDepth}H${x2 - notchRound}Q${x2} ${contactY - notchDepth} ${x2} ${contactY - notchDepth + notchRound}V${contactY + 60}`;
+  const cut = notches.length ? `url(#${id}-notches)` : undefined;
   return <svg viewBox={`0 0 ${width} ${height}`} className={`squeegee-art${working ? ' working-card' : ''}`} data-pose={pose} aria-hidden="true" focusable="false">
     <defs>
       <clipPath id={`${id}-lip`}>{working ? <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} rx="8"/> : <path d={`M${bladeLeft} ${contactY - 80} L${bladeRight} ${contactY - 80} L${bladeRight} ${contactY} L${bladeLeft} ${contactY}Z`}/>}</clipPath>
@@ -68,10 +74,15 @@ export function Squeegee({ paint = [], pose = 'resting' }: { paint?: BladePaintB
         <feComponentTransfer><feFuncA type="linear" slope=".1"/></feComponentTransfer>
         <feComposite in2="SourceGraphic" operator="in"/>
       </filter>
+      {notches.length > 0 && <mask id={`${id}-notches`} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height}>
+        <rect width={width} height={height} fill="#fff"/>
+        {notches.map(([x1, x2]) => <path key={x1} d={`${notchPath(x1, x2)}Z`} fill="#000"/>)}
+      </mask>}
       <linearGradient id={`${id}-wet`} x1="0" y1="0" x2="0" y2="1">
         <stop stopColor="#fff" stopOpacity=".04"/><stop offset=".22" stopColor="#fff" stopOpacity=".28"/><stop offset=".5" stopColor="#fff" stopOpacity=".05"/><stop offset="1" stopColor="#000" stopOpacity=".28"/>
       </linearGradient>
     </defs>
+    <g mask={cut}>
     {working ? <g data-profile="perpendicular-overhead" clipPath={`url(#${id}-lip)`}>
       <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} fill={`url(#${id}-rubber-edge)`}/>
       <rect x={bladeLeft} y={contactY} width={bladeWidth} height={edgeThickness} filter={`url(#${id}-rubber-grain)`}/>
@@ -91,6 +102,9 @@ export function Squeegee({ paint = [], pose = 'resting' }: { paint?: BladePaintB
         </g>;
       })}
     </g>}
+    {/* A darker line along each cut gives the notches a moulded rubber edge. */}
+    {!working && notches.map(([x1, x2]) => <path key={x1} d={notchPath(x1, x2)} fill="none" stroke="#9a7520" strokeOpacity=".55" strokeWidth="7"/>)}
+    </g>
   </svg>;
 }
 

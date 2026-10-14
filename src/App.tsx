@@ -10,7 +10,7 @@ import type { InkStroke } from './ink';
 import { bladePaint, type BladePaintBand } from './blade-paint';
 import { DispensingTube, type DispensingTubeHandle } from './DispensingTube';
 import { DISPENSE_RELEASE_MS } from './dispense-motion';
-import { squeegeeAnchor, squeegeeWidthScale } from './squeegee-geometry';
+import { squeegeeAnchor, squeegeeWidthScale, type BladeKind } from './squeegee-geometry';
 import { penWidths, StudioDock, studioColours as colours, type StudioTool as Tool } from './StudioDock';
 
 const W = 480, H = 600;
@@ -39,6 +39,7 @@ export function App() {
   const [paint, setPaint] = useState(colours[0].hex);
   const [bladeWidth, setBladeWidth] = useState(100);
   const [angle, setAngle] = useState(0);
+  const [blade, setBlade] = useState<BladeKind>('flat');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState(false);
@@ -54,7 +55,7 @@ export function App() {
     const current = runtime.current; if (!current) return;
     setHistoryState({ undo: current.history.canUndo, redo: current.history.canRedo });
     setCarriedPaint(bladePaint(current.engine)); setHasPaint(current.engine.surfaceMass() > .1 || current.engine.ink.length > 0);
-    setBladeWidth(current.engine.bladeWidth); setAngle(current.engine.angle);
+    setBladeWidth(current.engine.bladeWidth); setAngle(current.engine.angle); setBlade(current.engine.blade);
   };
 
   const persist = () => {
@@ -116,9 +117,9 @@ export function App() {
   const selectPaint = (hex: string) => { if (gesture.current) return; cancelRelease(); selected.current = 'paint'; colour.current = hex; setTool('paint'); setPaint(hex); setSettingsOpen(true); };
   const selectScraper = () => { if (gesture.current) return; cancelRelease(); selected.current = 'scrape'; setTool('scrape'); setSettingsOpen(true); };
   const selectPen = () => { if (gesture.current) return; cancelRelease(); selected.current = 'pen'; setTool('pen'); setSettingsOpen(true); };
-  const changeBlade = (width: number, rotation: number) => {
+  const changeBlade = (width: number, rotation: number, kind: BladeKind = blade) => {
     const current = runtime.current; if (!current || gesture.current) return;
-    current.history.checkpoint(); current.engine.setBlade(width, rotation); refresh(); persist();
+    current.history.checkpoint(); current.engine.setBlade(width, rotation, kind); refresh(); persist();
   };
   const historyAction = (action: 'undo' | 'redo') => {
     const current = runtime.current; if (!current || gesture.current) return;
@@ -233,7 +234,7 @@ export function App() {
           <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the scraper and drag to scrape, or select the pen to draw clean lines." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
           {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
-          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working"/> : tool === 'pen' ? <Pen colour={penColour}/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
+          {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working" blade={blade}/> : tool === 'pen' ? <Pen colour={penColour}/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
       </div>
@@ -243,7 +244,7 @@ export function App() {
     <StudioDock tool={tool} open={settingsOpen} onOpen={setSettingsOpen} disabled={!ready || contact}
       onSelect={next => next === 'paint' ? selectPaint(paint) : next === 'pen' ? selectPen() : selectScraper()}
       paint={paint} onPaint={selectPaint} penColour={penColour} penWidth={penWidth} onPenColour={setPenColour} onPenWidth={setPenWidth}
-      bladeWidth={bladeWidth} angle={angle} onBlade={changeBlade} carriedPaint={carriedPaint}
+      bladeWidth={bladeWidth} angle={angle} blade={blade} onBlade={changeBlade} carriedPaint={carriedPaint}
       undo={historyState.undo} redo={historyState.redo} onHistory={historyAction}
       about={credits} onAbout={() => setCredits(!credits)}/>
     {storageWarning && <div className="desk-meta"><div className="save-status" role="status">Export to keep this painting</div></div>}

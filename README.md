@@ -34,6 +34,11 @@ selects a tool. Escape closes settings and returns focus to the selected tool.
 Mouse hover labels include P/N/S shortcuts. Short lifts and fades provide
 feedback; keyboard shortcuts are immediate and reduced motion removes travel.
 
+The scraper comes as a flat card or a comb. The comb pushes a bead of paint
+ahead of it and extrudes it through its notches as continuous raised ridges,
+while its teeth pull thin grooves between them. Like the flat card, it keeps
+laying paint for as long as its load lasts.
+
 ## Checks
 
 ```sh

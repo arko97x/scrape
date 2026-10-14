@@ -67,7 +67,6 @@ h1 { font: 25px/1.1 'DM Serif Display', Georgia, serif; font-weight: 400; letter
 .tool-cursor.pen { -webkit-mask-image: linear-gradient(to bottom, transparent 62%, #000 73%); mask-image: linear-gradient(to bottom, transparent 62%, #000 73%); }
 .tool-cursor.pen.lifted { opacity: 1; filter: drop-shadow(3px 5px 2px #51483338); }
 .tool-cursor.pen.touching { opacity: 1; filter: drop-shadow(.5px 1px .5px #51483328); }
-input[type=range] { accent-color: #66795d; width: 100%; height: 20px; cursor: pointer; }
 kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'DM Sans', sans-serif; padding: 2px 4px; margin-left: 4px; opacity: .65; }
 .save-status { margin-left: auto; font-size: 9px; }
 .loading-paper { position: absolute; inset: 0; display: grid; place-items: center; font: italic 20px Georgia, serif; color: #88856d; background: #f5f1e5; clip-path: var(--paper-edge); }
