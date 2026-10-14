@@ -45,6 +45,16 @@ ahead of it and extrudes it through its notches as continuous raised ridges,
 while its teeth pull thin grooves between them. Like the flat card, it keeps
 laying paint for as long as its load lasts.
 
+The card turns to any angle, and keeps its paint as it turns. On touch, two
+fingers hold its ends: the card sits between them and turns as they do, and
+holding one finger still while the other sweeps round swings a fan. With a
+mouse or trackpad, scrolling over the paper turns the card, in the air or
+mid-pull, and [ and ] turn it by 15°. Holding Alt (Option on a Mac) mid-pull
+pins the card's left end, or its top end when upright, and the card swings
+round it as the pointer circles; add Shift to pin the other end. Turn switches
+it between level and upright, also keeping its paint. Choosing another card
+starts it clean.
+
 ## Checks
 
 ```sh
