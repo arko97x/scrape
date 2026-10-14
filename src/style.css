@@ -70,10 +70,6 @@ h1 { font: 25px/1.1 'DynaPuff', 'Nunito', sans-serif; font-weight: 500; letter-s
 kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'Nunito', sans-serif; padding: 2px 4px; margin-left: 4px; opacity: .65; }
 .save-status { margin-left: auto; font-size: 9px; }
 .loading-paper { position: absolute; inset: 0; display: grid; place-items: center; font: 20px 'DynaPuff', 'Nunito', sans-serif; color: #88856d; background: #f5f1e5; clip-path: var(--paper-edge); }
-.credits { position: fixed; z-index: 6; bottom: 65px; right: 32px; max-width: 330px; padding: 20px 26px; background: #f5f0e3; border: 1px solid #b6b8a3; box-shadow: 0 8px 25px #50463324; font-size: 12px; line-height: 1.6; }
-.credits button { float: right; display: grid; place-items: center; width: 24px; height: 24px; }
-.credits em { font: 600 26px 'DynaPuff', 'Nunito', sans-serif; }
-.credits a { color: #9c523c; }
 .error-message { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); max-width: min(520px, 90vw); background: #fff2e1; padding: 16px 24px; border: 1px solid #b85943; z-index: 10; font-size: 13px; }
 @media (hover: hover) and (pointer: fine) {
   .export-button:hover:not(:disabled) { background: #f7f1e5; }

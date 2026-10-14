@@ -21,7 +21,7 @@ type Props = {
   bladeWidth: number; angle: number; blade: BladeKind; onBlade: (width: number, angle: number, blade?: BladeKind) => void;
   carriedPaint: BladePaintBand[];
   undo: boolean; redo: boolean; onHistory: (action: 'undo' | 'redo') => void;
-  about: boolean; onAbout: () => void;
+  onAbout: () => void;
 };
 
 const inkColours = [
@@ -128,7 +128,7 @@ export function StudioDock(props: Props) {
       </div>
       <button className="dock-icon settings-toggle" aria-label={props.open ? 'Hide tool settings' : 'Show tool settings'} aria-expanded={props.open} aria-controls="tool-settings" disabled={props.disabled} tabIndex={stop === 'settings' ? 0 : -1} {...labelEvents('settings')} onClick={() => { hideTip(); props.onOpen(!props.open); }}>{props.open ? <ChevronDown className="ui-icon" aria-hidden="true"/> : <ChevronUp className="ui-icon" aria-hidden="true"/>}{tip('settings', props.open ? 'Hide settings' : 'Show settings')}</button>
       <span className="dock-divider" aria-hidden="true"/>
-      <button className="dock-icon about-toggle" aria-label="About Scrape" aria-expanded={props.about} aria-controls="about-scrape" tabIndex={stop === 'about' ? 0 : -1} {...labelEvents('about')} onClick={() => { hideTip(); props.onAbout(); }}><Info className="ui-icon" aria-hidden="true"/>{tip('about', 'About')}</button>
+      <button className="dock-icon about-toggle" aria-label="About Scrape" aria-haspopup="dialog" tabIndex={stop === 'about' ? 0 : -1} {...labelEvents('about')} onClick={() => { hideTip(); props.onAbout(); }}><Info className="ui-icon" aria-hidden="true"/>{tip('about', 'About')}</button>
     </div>
   </div>;
 }

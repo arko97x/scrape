@@ -1,0 +1,91 @@
+/* Onboarding and About share one dialog shell: a paper card over a dimmed desk. */
+.modal { width: min(460px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 1px solid #d5d9ce; border-radius: 12px; background: #fffdf8; color: var(--ink); box-shadow: 0 2px 4px #2632270f, 0 24px 60px #26322733; overflow: hidden; }
+.modal::backdrop { background: #2b3429; opacity: .42; }
+.modal[open] { animation: modal-in 220ms var(--ease-out); }
+.modal[open]::backdrop { animation: backdrop-in 220ms var(--ease-out); }
+@keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+@keyframes backdrop-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .modal[open], .modal[open]::backdrop { animation: none; } }
+.modal-body { position: relative; max-height: calc(100dvh - 26px); overflow: auto; padding: 22px 24px 20px; overscroll-behavior: contain; }
+.modal-close { position: absolute; z-index: 4; top: 12px; right: 12px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #596650; }
+.modal-close:hover { background: #eef1e8; }
+.modal h2 { margin: 0; text-wrap: balance; }
+.modal-mark { font: 600 28px/1 'DynaPuff', 'Nunito', sans-serif; letter-spacing: -.5px; color: var(--ink); }
+.modal-primary, .modal-secondary { min-height: 44px; padding: 0 20px; border-radius: 999px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+.modal-primary { background: var(--ink); color: #fffdf8; }
+.modal-primary:hover { background: #2a3a2e; }
+.modal-secondary { border: 1.5px solid #c9d0c0; color: var(--ink); }
+.modal-secondary:hover { background: #eef1e8; }
+
+/* Onboarding */
+.welcome-layout { display: grid; gap: 16px; }
+.welcome-hello { margin: 0; padding-right: 40px; }
+.welcome-demo { position: relative; container-type: inline-size; aspect-ratio: 4 / 3; border-radius: 4px; overflow: hidden; background: #e9e3d7; background-image: radial-gradient(#52614c14 .65px, transparent .8px); background-size: 7px 7px; }
+/* The scene is the sheet plus the desk below it. --pan 1 frames the dock,
+   0 frames the sheet; field cells are (75cqw - 18px) / 240 tall. */
+.welcome-scene { --k: calc(100cqw / 512); position: absolute; inset: 0; opacity: var(--fade, 1); transform: translateY(calc(var(--pan, 0) * var(--pan-cells) * (18px - 75cqw) / 240)); will-change: transform; }
+.welcome-sheet { position: absolute; inset: 0; border-radius: 4px; background: #d7d4a7bd; background-image: repeating-linear-gradient(5deg, transparent 0 2px, #fff2 2px 3px); box-shadow: inset 0 0 0 1px #a19e7422, 0 2px 6px #5046331a; }
+/* Cursor positions are field cells, so they share the paper's box inside the tape. */
+.welcome-field { position: absolute; inset: 9px; }
+.welcome-field canvas { display: block; width: 100%; height: 100%; background: #f5f1e5; }
+.welcome-demo .tool-cursor.paint { width: 34px; }
+.welcome-demo .tool-cursor.pen { width: 17px; }
+.welcome-demo .tool-cursor { z-index: 5; }
+/* A miniature of the studio dock, sized from its real pixel values by --k. */
+.welcome-dock { position: absolute; left: 16.25%; width: 67.5%; top: 120%; height: 21.7%; background: #fffdf8; border: 1px solid #d5d9ce; border-bottom: 0; border-radius: 6px 6px 0 0; box-shadow: 0 1px 2px #2632270a, 0 8px 22px #26322712; }
+.welcome-slot { position: absolute; top: 0; bottom: 0; width: 22%; transform: translateX(-50%); clip-path: inset(-80% -20% 0 -20%); }
+.welcome-slot.scrape { width: 27%; }
+.welcome-tab { position: absolute; left: 4%; right: 4%; top: calc(-28 * var(--k)); bottom: 0; display: flex; justify-content: center; padding-top: calc(5 * var(--k)); border-radius: 6px 6px 0 0; background: #e2e7d9; box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3; opacity: 0; transform: translateY(calc(28 * var(--k))); transition: opacity 160ms var(--ease-out), transform 260ms var(--ease-out); }
+.welcome-tab span { font-size: calc(12 * var(--k)); line-height: 1.2; font-weight: 700; color: #344b39; white-space: nowrap; }
+.welcome-slot[data-armed=true] .welcome-tab { opacity: 1; transform: none; }
+.welcome-slot svg { position: absolute; left: 50%; }
+.welcome-slot .tube-art { width: calc(41.6 * var(--k)); height: calc(104 * var(--k)); bottom: calc(-34 * var(--k)); transform: translateX(-50%) rotate(180deg); }
+.welcome-slot .pen-art { width: calc(30 * var(--k)); height: calc(170 * var(--k)); bottom: calc(-100 * var(--k)); transform: translateX(-50%) rotate(180deg); }
+.welcome-slot .squeegee-art { width: calc(80 * var(--k)); height: auto; bottom: calc(-2 * var(--k)); transform: translateX(-50%); }
+.welcome-divider { position: absolute; left: 80.6%; top: 22%; bottom: 22%; width: 1px; background: #dce2d7; }
+.welcome-history { position: absolute; top: 50%; width: calc(19 * var(--k)); height: calc(19 * var(--k)); color: #7b8272; transform: translate(-50%, -50%); }
+.welcome-history:nth-of-type(1) { left: 87.5%; }
+.welcome-history:nth-of-type(2) { left: 95.5%; }
+.welcome-pointer { position: absolute; z-index: 6; width: calc(22 * var(--k)); height: auto; transform-origin: 2px 2px; filter: drop-shadow(0 2px 2px #1f2a2233); transition: transform 120ms var(--ease-out); }
+.welcome-pointer[data-pressed=true] { transform: scale(.82); }
+.welcome-tap { position: absolute; z-index: 4; width: calc(56 * var(--k)); aspect-ratio: 1; border-radius: 50%; border: 2px solid #b85943; transform: translate(-50%, -50%) scale(.3); opacity: 0; animation: welcome-tap 520ms var(--ease-out); }
+@keyframes welcome-tap { from { opacity: .7; transform: translate(-50%, -50%) scale(.3); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
+.welcome-chip { position: absolute; z-index: 4; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: #fffdf8e8; box-shadow: 0 1px 3px #2632271f; font-size: 12px; font-weight: 700; color: var(--ink); }
+.welcome-chip .ui-icon { width: 15px; height: 15px; }
+.welcome-undo { left: auto; right: 16px; animation: chip-pop 260ms var(--ease-out); }
+@keyframes chip-pop { from { opacity: 0; transform: scale(.8); } }
+.welcome-fallback { position: absolute; inset: 9px; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; font-size: 14px; color: var(--muted); background: #f5f1e5; }
+.welcome-text { display: grid; gap: 6px; min-height: 128px; align-content: start; }
+.welcome-count { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral); }
+.welcome-text h2 { font: 600 24px/1.15 'DynaPuff', 'Nunito', sans-serif; }
+.welcome-text p:last-child { margin: 0; font-size: 15px; line-height: 1.5; color: #4b5b4e; }
+.welcome-nav { display: flex; align-items: center; gap: 8px; }
+.welcome-dots { display: flex; gap: 2px; margin-right: auto; }
+.welcome-dots button { width: 24px; height: 24px; display: grid; place-items: center; }
+.welcome-dots button::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #cfd5c6; transition: background 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.welcome-dots button[aria-current=step]::before { background: var(--ink); transform: scale(1.25); }
+
+/* About */
+.about { width: min(540px, calc(100vw - 24px)); }
+.about .modal-body { display: grid; gap: 22px; padding: 28px 28px 24px; }
+.about-head { display: grid; gap: 8px; padding-right: 40px; }
+.about-mark { font-size: 44px; }
+.about-head p { margin: 0; font-size: 16px; line-height: 1.45; color: #4b5b4e; }
+.about-section { display: grid; gap: 8px; }
+.about-section h2 { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral); }
+.about-section p { margin: 0; font-size: 15px; line-height: 1.6; max-width: 62ch; }
+.colophon { display: grid; gap: 0; margin: 0; border-top: 1px solid #e3e6dc; }
+.colophon div { display: grid; grid-template-columns: 112px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e3e6dc; }
+.colophon dt { font-size: 13px; font-weight: 700; }
+.colophon dd { margin: 0; font-size: 13px; line-height: 1.55; color: #4b5b4e; min-width: 0; }
+.colophon a, .about-section a { color: #9c523c; }
+.about-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+
+@media (max-width: 480px) {
+  .modal-body { padding: 18px 16px 16px; }
+  .about .modal-body { padding: 22px 18px 18px; }
+  .welcome-text { min-height: 150px; }
+  .welcome-text h2 { font-size: 21px; }
+  .colophon div { grid-template-columns: 1fr; gap: 2px; }
+  .modal-primary, .modal-secondary { padding: 0 16px; }
+}

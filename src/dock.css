@@ -18,8 +18,7 @@
 .dock-studio .paper-invitation { font-size: clamp(23px, 3vw, 32px); }
 .dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 14px + var(--safe-bottom)); transform: translateX(-50%); font-size: 10px; color: #78806f; white-space: nowrap; pointer-events: none; }
 .desk-meta { position: fixed; right: 32px; bottom: calc(24px + var(--safe-bottom)); font-size: 10px; color: #78806f; }
-.dock-studio .header-actions button, .dock-studio .credits button, .dock-studio .error-message, .dock-studio kbd { border-radius: var(--ui-radius); }
-.dock-studio .credits { bottom: 100px; border-radius: var(--ui-radius); }
+.dock-studio .header-actions button, .dock-studio .error-message, .dock-studio kbd { border-radius: var(--ui-radius); }
 
 .studio-dock { position: fixed; z-index: 5; bottom: 0; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); }
 .dock-bar, .dock-settings { background: #fffdf8; border: 1px solid #d5d9ce; box-shadow: 0 1px 2px #2632270a, 0 8px 22px #26322712; }
@@ -115,7 +114,6 @@
 }
 @media (max-width: 900px) {
   .desk-meta { bottom: 210px; }
-  .dock-studio .credits { left: 50%; right: auto; bottom: calc(var(--desk-controls) + 8px + var(--safe-bottom)); width: min(330px, calc(100vw - 36px)); transform: translateX(-50%); }
 }
 @media (max-width: 560px) {
   .dock-studio { padding: 0 18px; --desk-header: 64px; }

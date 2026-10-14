@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import mixbox from 'mixbox';
-import { ArrowDownRight, Download, Plus, X } from 'lucide-react';
-import { PaintEngine, PaintHistory, type Colour, type Point } from './engine';
+import { ArrowDownRight, Download, Plus } from 'lucide-react';
+import { PaintEngine, PaintHistory, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
@@ -12,10 +11,13 @@ import { DispensingTube, type DispensingTubeHandle } from './DispensingTube';
 import { DISPENSE_RELEASE_MS } from './dispense-motion';
 import { squeegeeAnchor, squeegeeWidthScale, type BladeKind } from './squeegee-geometry';
 import { penWidths, StudioDock, studioColours as colours, type StudioTool as Tool } from './StudioDock';
+import { rgb, pigmentBlend } from './pigment';
+import { Welcome } from './Welcome';
+import { About } from './About';
 
 const W = 480, H = 600;
-const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255] as Colour;
-const pigmentBlend = (a: Colour, b: Colour, t: number): Colour => mixbox.lerp(a.map(v => v * 255), b.map(v => v * 255), t).map(v => v / 255) as Colour;
+const WELCOMED = 'scrape:welcomed';
+const welcomed = () => { try { return localStorage.getItem(WELCOMED) === '1'; } catch { return false; } };
 type Gesture = { pointerId: number; squeeze?: SqueezeStroke; pen?: InkStroke };
 type Runtime = { engine: PaintEngine; history: PaintHistory; renderer: PaintRenderer };
 
@@ -50,6 +52,7 @@ export function App() {
   const [exporting, setExporting] = useState(false);
   const [hasPaint, setHasPaint] = useState(false);
   const [credits, setCredits] = useState(false);
+  const [welcome, setWelcome] = useState(() => !welcomed());
 
   const refresh = () => {
     const current = runtime.current; if (!current) return;
@@ -128,7 +131,7 @@ export function App() {
   };
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
-      if (gesture.current || !ready) return;
+      if (gesture.current || !ready || document.querySelector('dialog[open]')) return;
       if (event.key === 'Escape') { setKeyboardMotion(true); setSettingsOpen(false); dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); return; }
       if ((event.target as HTMLElement).matches('input, textarea, select')) return;
       setKeyboardMotion(true);
@@ -221,7 +224,6 @@ export function App() {
   return <main className="studio dock-studio" data-keyboard={keyboardMotion} onPointerDownCapture={() => setKeyboardMotion(false)}>
     <header className="header">
       <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}>scrape<span className="brand-dot">.</span></a>
-      <span className="header-caption">a little paint playground</span>
       <div className="header-actions">
         <button className="new-sheet" aria-label="New sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
         <button className="export-button" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/>{exporting ? 'Exporting…' : 'Keep this one'}</button>
@@ -246,9 +248,10 @@ export function App() {
       paint={paint} onPaint={selectPaint} penColour={penColour} penWidth={penWidth} onPenColour={setPenColour} onPenWidth={setPenWidth}
       bladeWidth={bladeWidth} angle={angle} blade={blade} onBlade={changeBlade} carriedPaint={carriedPaint}
       undo={historyState.undo} redo={historyState.redo} onHistory={historyAction}
-      about={credits} onAbout={() => setCredits(!credits)}/>
+      onAbout={() => setCredits(true)}/>
     {storageWarning && <div className="desk-meta"><div className="save-status" role="status">Export to keep this painting</div></div>}
-    {credits && <div id="about-scrape" className="credits" role="dialog" aria-label="About Scrape"><button aria-label="Close about" onClick={() => setCredits(false)}><X className="ui-icon" aria-hidden="true"/></button><p><em>Scrape.</em> A small studio for happy accidents.</p><p>Pigment mixing by <a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. This prototype is non-commercial.</p></div>}
+    {credits && <About onClose={() => setCredits(false)} onWelcome={() => { setCredits(false); setWelcome(true); }}/>}
+    {welcome && <Welcome onClose={() => { setWelcome(false); try { localStorage.setItem(WELCOMED, '1'); } catch { /* Shows again next visit. */ } }}/>}
     {error && <div className="error-message" role="alert">{error}</div>}
   </main>;
 }

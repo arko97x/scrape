@@ -34,6 +34,12 @@ selects a tool. Escape closes settings and returns focus to the selected tool.
 Mouse hover labels include P/N/S shortcuts. Short lifts and fades provide
 feedback; keyboard shortcuts are immediate and reduced motion removes travel.
 
+A first visit opens a three-step welcome. Each step taps its tool in a
+miniature dock, pans up to a small sheet and runs the real paint engine to
+show squeezing, scraping, and the pen with undo. The
+info button opens About, with the story, a colophon, and a way back to the
+welcome.
+
 The scraper comes as a flat card or a comb. The comb pushes a bead of paint
 ahead of it and extrudes it through its notches as continuous raised ridges,
 while its teeth pull thin grooves between them. Like the flat card, it keeps
