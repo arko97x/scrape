@@ -262,7 +262,7 @@ const stepsFor = (touch: boolean) => [
   { title: 'Scrape it across', body: 'Pick the scraper and pull it through the paint. The flat card spreads colours smooth; the comb leaves ridges.' },
   touch
     ? { title: 'Turn as you pull', body: 'Hold the scraper with two fingers, one at each end. Twist them as you pull and the card turns too, sweeping paint into curves and fans.' }
-    : { title: 'Turn as you pull', body: 'Curve your drag and the card turns with it; drag straight and it stays put. Scroll over the paper to set its angle first, or hold Shift to keep it steady.' },
+    : { title: 'Turn as you pull', body: <>Curve your drag and the card turns with it; drag straight and it stays put. Scroll over the paper to set its angle first, or <strong>hold Shift</strong> to keep it steady.</> },
   { title: 'Draw, undo, keep', body: 'The pen draws on top of the paint. Undo takes back a step, and the download button saves your painting as a picture. Scrape also remembers it in this browser.' },
 ];
 
