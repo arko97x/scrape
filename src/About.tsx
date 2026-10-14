@@ -1,10 +1,11 @@
 import { Modal } from './Modal';
+import { Wordmark } from './Wordmark';
 import './modal.css';
 
 export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: () => void }) {
   return <Modal id="about-scrape" label="About Scrape" className="about" onClose={onClose}>
     <header className="about-head">
-      <span className="modal-mark about-mark">scrape<span className="brand-dot">.</span></span>
+      <span className="modal-mark about-mark"><Wordmark/></span>
       <p>A little paint playground for squeezing, scraping and happy accidents.</p>
     </header>
     <section className="about-section">

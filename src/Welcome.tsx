@@ -10,6 +10,7 @@ import { Pen, Squeegee, Tube } from './tools';
 import { rgb, pigmentBlend } from './pigment';
 import { PathSteer } from './scrape-grip';
 import { Modal } from './Modal';
+import { Wordmark } from './Wordmark';
 import './modal.css';
 
 // A small landscape sheet keeps the demos cheap; brush sizes stay in field
@@ -278,7 +279,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
   };
   return <Modal id="welcome" label="How Scrape works" className="welcome" closeOnBackdrop={false} onClose={onClose}>
     <div className="welcome-layout" onKeyDown={keys}>
-      <p className="welcome-hello"><span className="modal-mark">scrape<span className="brand-dot">.</span></span></p>
+      <p className="welcome-hello"><span className="modal-mark"><Wordmark/></span></p>
       <Demo step={step} reduced={reduced} touch={touch}/>
       <div className="welcome-text" aria-live="polite">
         <p className="welcome-count">{step + 1} of {steps.length}</p>

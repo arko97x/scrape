@@ -10,7 +10,7 @@
 .modal-close { position: absolute; z-index: 4; top: 12px; right: 12px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #596650; }
 .modal-close:hover { background: #eef1e8; }
 .modal h2 { margin: 0; text-wrap: balance; }
-.modal-mark { font: 600 28px/1 'DynaPuff', 'Nunito', sans-serif; letter-spacing: -.5px; color: var(--ink); }
+.modal-mark { display: inline-block; font-size: 28px; line-height: 1; }
 .modal-primary, .modal-secondary { min-height: 44px; padding: 0 20px; border-radius: 999px; font-size: 14px; font-weight: 700; white-space: nowrap; }
 .modal-primary { background: var(--ink); color: #fffdf8; }
 .modal-primary:hover { background: #2a3a2e; }

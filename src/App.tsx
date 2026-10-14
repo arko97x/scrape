@@ -15,6 +15,7 @@ import { rgb, pigmentBlend } from './pigment';
 import { PathSteer, twoFingerPose } from './scrape-grip';
 import { Welcome } from './Welcome';
 import { About } from './About';
+import { Wordmark } from './Wordmark';
 
 const W = 480, H = 600;
 const WELCOMED = 'scrape:welcomed';
@@ -329,7 +330,7 @@ export function App() {
 
   return <main className="studio dock-studio" data-keyboard={keyboardMotion} onPointerDownCapture={() => setKeyboardMotion(false)}>
     <header className="header">
-      <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}>scrape<span className="brand-dot">.</span></a>
+      <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}><Wordmark label=""/></a>
       <div className="header-actions">
         <button className="new-sheet" aria-label="New sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
         <button className="export-button" aria-label={exporting ? 'Saving picture…' : 'Save as a picture'} title="Save as a picture" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/></button>

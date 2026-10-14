@@ -41,6 +41,9 @@ step matches the device: two fingers twisting the card on a touch screen, or a
 curving drag steering it with a mouse or trackpad. The info button opens About,
 with the story, a colophon, and a way back to the welcome.
 
+The logo, its favicon and the rounds of exploration behind it live in
+[`brand/`](brand/README.md).
+
 The scraper comes as a flat card or a comb. The comb pushes a bead of paint
 ahead of it and extrudes it through its notches as continuous raised ridges,
 while its teeth pull thin grooves between them. Like the flat card, it keeps
