@@ -4,6 +4,15 @@
 @supports (-webkit-touch-callout: none) {
   @media (pointer: coarse) { :root { --safe-bottom: max(env(safe-area-inset-bottom, 0px), 20px); } }
 }
+/* By default the dock bar sits on the bottom edge and pads itself clear of the
+   safe area. --dock-lift raises it off the edge; --dock-under is everything
+   below the bar's controls, which the desk and the hint keep clear of. */
+:root { --dock-lift: 0px; --dock-pad: var(--safe-bottom); --dock-under: calc(var(--dock-lift) + var(--dock-pad)); }
+/* On a tablet the bar floats above the home indicator instead, as a card with
+   all its corners rounded. */
+@media (pointer: coarse) and (min-width: 600px) and (min-height: 600px) {
+  :root { --dock-lift: calc(var(--safe-bottom) + 12px); --dock-pad: 0px; }
+}
 /* The desk reserves space for both dock rows, so settings never move the paper. */
 .dock-studio { --ui-radius: 4px; --desk-header: 64px; --dock-height: 64px; --dock-gap: 8px; --desk-controls: calc(var(--dock-height) + var(--dock-height) + var(--dock-gap) + 32px); height: 100dvh; min-height: 520px; padding: 0 32px; display: flex; flex-direction: column; }
 .dock-studio .header { min-height: calc(var(--desk-header) + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); border-bottom: 0; flex-shrink: 0; }
@@ -12,18 +21,19 @@
 .dock-studio .header-actions { gap: 20px; }
 .dock-studio .export-button { border-radius: var(--ui-radius); }
 .dock-studio .new-sheet { min-height: 44px; }
-.dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--safe-bottom)); padding: 24px 0; }
+.dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--dock-under)); padding: 24px 0; }
 .dock-studio .paper-area { width: 100%; }
-.dock-studio .paper-host { width: min(calc(100% - 60px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--safe-bottom)) * .8)); }
+.dock-studio .paper-host { width: min(calc(100% - 60px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--dock-under)) * .8)); }
 .dock-studio .paper-invitation { font-size: clamp(30px, 4.2vw, 44px); }
-.dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 20px + var(--safe-bottom)); transform: translateX(-50%); font-size: 14px; font-weight: 600; color: #6b7462; white-space: nowrap; pointer-events: none; }
+.dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 20px + var(--dock-under)); transform: translateX(-50%); font-size: 14px; font-weight: 600; color: #6b7462; white-space: nowrap; pointer-events: none; }
 .desk-meta { position: fixed; right: 32px; bottom: calc(24px + var(--safe-bottom)); font-size: 10px; color: #78806f; }
 .dock-studio .header-actions button, .dock-studio .error-message, .dock-studio kbd { border-radius: var(--ui-radius); }
 
-.studio-dock { position: fixed; z-index: 5; bottom: 0; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); }
+.studio-dock { position: fixed; z-index: 5; bottom: var(--dock-lift); left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); }
 .dock-bar, .dock-settings { background: #fffdf8; border: 1px solid #d5d9ce; box-shadow: 0 1px 2px #2632270a, 0 8px 22px #26322712; }
-/* The bar sits flush on the bottom edge, so only its top corners are rounded. */
-.dock-bar { height: calc(var(--dock-height) + var(--safe-bottom)); border-radius: var(--ui-radius) var(--ui-radius) 0 0; display: flex; align-items: center; padding: 4px 6px calc(4px + var(--safe-bottom)); }
+/* Sitting flush on the bottom edge, the bar rounds only its top corners. */
+.dock-bar { height: calc(var(--dock-height) + var(--dock-pad)); border-radius: var(--ui-radius) var(--ui-radius) 0 0; display: flex; align-items: center; padding: 4px 6px calc(4px + var(--dock-pad)); }
+@media (pointer: coarse) and (min-width: 600px) and (min-height: 600px) { .dock-bar { border-radius: var(--ui-radius); } }
 .dock-tools { display: flex; align-items: center; height: 100%; flex: 1; min-width: 0; }
 /* Tools give up width first on very narrow screens, so the icons always fit. */
 .dock-tool { position: relative; width: 76px; min-width: 44px; height: 54px; border-radius: var(--ui-radius); flex-shrink: 1; padding: 0; }
@@ -34,7 +44,7 @@
    as a tab carrying its name, running down to the bar's bottom edge. Opening
    settings folds it back into the bar. --tab-drop covers the bar's bottom
    padding and border below the button. */
-.studio-dock { --tab-rise: 30px; --tab-drop: calc(5px + var(--safe-bottom)); }
+.studio-dock { --tab-rise: 30px; --tab-drop: calc(5px + var(--dock-pad)); }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true]::before { clip-path: inset(0 round var(--ui-radius) var(--ui-radius) 0 0); box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3, 0 -2px 8px #26322712; }
 .dock-tool-name { position: absolute; left: 0; right: 0; top: calc(5px - var(--tab-rise)); font-size: 14px; line-height: 18px; font-weight: 600; letter-spacing: .2px; color: #344b39; text-align: center; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-out), transform 180ms var(--ease-out); }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true] .dock-tool-name { opacity: 1; transform: translateY(0); transition-delay: 40ms; }
@@ -68,7 +78,7 @@
 .dock-settings .paint-swatch, .dock-settings .dock-choice, .dock-settings .dock-action { position: relative; }
 .dock-settings .dock-tip { bottom: calc(100% + 10px); }
 
-.dock-settings { position: absolute; bottom: calc(var(--dock-height) + var(--dock-gap) + var(--safe-bottom)); left: 50%; width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); height: var(--dock-height); border-radius: var(--ui-radius); opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transform-origin: center bottom; transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out); }
+.dock-settings { position: absolute; bottom: calc(var(--dock-height) + var(--dock-gap) + var(--dock-pad)); left: 50%; width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); height: var(--dock-height); border-radius: var(--ui-radius); opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transform-origin: center bottom; transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out); }
 .dock-settings[data-open=false] { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.98); pointer-events: none; }
 .dock-settings-page { display: flex; height: 100%; align-items: center; justify-content: center; gap: 14px; padding: 8px 14px; }
 .dock-settings-page[hidden] { display: none; }
@@ -128,7 +138,7 @@
   .dock-studio .header-actions { gap: 12px; }
   .dock-studio .new-sheet { width: 36px; justify-content: center; }
   .dock-studio .new-sheet span { display: none; }
-  .dock-studio .paper-host { width: min(calc(100% - 24px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--safe-bottom)) * .8)); }
+  .dock-studio .paper-host { width: min(calc(100% - 24px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--dock-under)) * .8)); }
   .dock-tool { width: 61px; }
   .dock-tool.dock-scrape { width: 78px; }
   .dock-scrape .dock-object { width: 62px; }
