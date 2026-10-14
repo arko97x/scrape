@@ -2,8 +2,6 @@ import { normaliseAngle, type Point } from './engine';
 
 /** Where the card's centre sits and which way it points, in field units and degrees. */
 export type CardPose = { centre: Point; angle: number };
-/** A pinned end of the card. `side` says which way the centre lies along the card from it. */
-export type Pin = { at: Point; side: 1 | -1 };
 
 export const pointAngle = (from: Point, to: Point) => Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
 
@@ -19,27 +17,39 @@ export function twoFingerPose(a: Point, b: Point, current: number): CardPose {
   return { centre, angle: normaliseAngle(angle) };
 }
 
-/** The end that stays put while pivoting: the left one, or the top one for an
- *  upright card. `other` pins the opposite end. */
-export function pinnedEnd({ centre, angle }: CardPose, width: number, other = false): Pin {
-  const radians = angle * Math.PI / 180, half = (width - 1) / 2;
-  const tx = Math.cos(radians), ty = Math.sin(radians);
-  const forwards = Math.abs(tx) > 1e-6 ? tx > 0 : ty > 0;
-  // With the card pointing right (or down), the left (or top) end is behind the centre.
-  const side = forwards !== other ? 1 : -1;
-  return { at: { x: centre.x - side * tx * half, y: centre.y - side * ty * half }, side };
-}
+/** Lets a single pointer steer the card along its path, as two fingers would
+ *  turn it through a curve. The card keeps whatever angle it made with the
+ *  direction of travel when the pull began, so straight pulls never turn.
+ *
+ *  The heading comes from a bead towed `reach` behind the pointer, which
+ *  smooths out hand shake. The card follows it with `slack` degrees of play,
+ *  like a loose joint: the sway of a trackpad stroke is taken up in the play
+ *  and leaves the card alone, while a curve that keeps turning takes the card
+ *  with it, trailing by the slack. A turn sharper than `cusp` degrees between two
+ *  updates is a doubling back, not a curve: the card keeps its angle and
+ *  carries on from the new direction instead of spinning through the paint. */
+export class PathSteer {
+  private bead: Point;
+  private heading: number | null = null;
+  private offset = 0;
+  constructor(start: Point, private readonly reach = 24, private readonly slack = 10, private readonly cusp = 75) { this.bead = { ...start }; }
 
-/** The card at `angle`, swung about its pinned end. */
-export function pivotPose(pin: Pin, angle: number, width: number): CardPose {
-  const radians = angle * Math.PI / 180, half = (width - 1) / 2;
-  return { centre: { x: pin.at.x + pin.side * Math.cos(radians) * half, y: pin.at.y + pin.side * Math.sin(radians) * half }, angle: normaliseAngle(angle) };
-}
+  /** The card's new angle with the pointer at `at`, or null to keep it. While
+   *  `hold` is set, the card keeps its angle whichever way the pointer goes. */
+  follow(at: Point, card: number, hold = false): number | null {
+    const dx = at.x - this.bead.x, dy = at.y - this.bead.y, distance = Math.hypot(dx, dy);
+    if (distance <= this.reach) return null;
+    this.bead = { x: at.x - dx / distance * this.reach, y: at.y - dy / distance * this.reach };
+    const heading = pointAngle(this.bead, at), previous = this.heading;
+    this.heading = heading;
+    if (previous === null || hold || Math.abs(normaliseAngle(heading - previous)) > this.cusp) {
+      this.offset = normaliseAngle(card - heading);
+      return null;
+    }
+    const ahead = normaliseAngle(heading + this.offset - card);
+    return Math.abs(ahead) <= this.slack ? null : normaliseAngle(card + ahead - Math.sign(ahead) * this.slack);
+  }
 
-/** Breaks a pivot into turns of at most `limit` degrees, so the card sweeps a
- *  true arc rather than cutting the corner between far-apart pointer events. */
-export function pivotPath(pin: Pin, from: number, to: number, width: number, limit = 3): CardPose[] {
-  const turn = normaliseAngle(to - from);
-  const count = Math.max(1, Math.ceil(Math.abs(turn) / limit));
-  return Array.from({ length: count }, (_, step) => pivotPose(pin, from + turn * (step + 1) / count, width));
+  /** The card was turned some other way, by scrolling: steer on from its new angle. */
+  rebase(card: number) { if (this.heading !== null) this.offset = normaliseAngle(card - this.heading); }
 }

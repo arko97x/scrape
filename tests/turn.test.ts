@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normaliseAngle, PaintEngine } from '../src/engine.ts';
-import { pinnedEnd, pivotPath, pivotPose, twoFingerPose } from '../src/scrape-grip.ts';
+import { PathSteer, twoFingerPose } from '../src/scrape-grip.ts';
 
 const near = (actual: number, expected: number, tolerance = Math.max(.001, Math.abs(expected) * .00001)) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} ≈ ${expected}`);
 const red: [number, number, number] = [.9, .1, .1];
@@ -41,18 +41,14 @@ test('the card turns the short way round', () => {
   assert.equal(heightAt(engine, 70, 62), before);
 });
 
-test('pivoting about one end sweeps paint round in an arc', () => {
+test('swinging the card about one end sweeps paint round in an arc', () => {
   const engine = new PaintEngine(200, 220); engine.setBlade(81, 0);
-  const pin = pinnedEnd({ centre: { x: 70, y: 60 }, angle: 0 }, 81);
-  near(pin.at.x, 30); near(pin.at.y, 60);
+  // Held still at (30, 60), the left end; the centre swings 40 cells out from it.
+  const pose = (degrees: number) => { const r = degrees * Math.PI / 180; return { x: 30 + Math.cos(r) * 40, y: 60 + Math.sin(r) * 40 }; };
   engine.deposit({ x: 95, y: 82 }, red, 6, 120);
   const swept = heightAt(engine, 95, 82);
-  engine.beginScrape({ x: 70, y: 60 });
-  let angle = 0;
-  for (const target of [20, 40, 60, 80]) {
-    for (const pose of pivotPath(pin, angle, target, 81)) engine.scrape(pose.centre, pose.angle);
-    angle = target;
-  }
+  engine.beginScrape(pose(0));
+  for (let degrees = 2; degrees <= 80; degrees += 2) engine.scrape(pose(degrees), degrees);
   engine.endScrape();
   near(engine.totalMass(), 120);
   assert.ok(heightAt(engine, 95, 82) < swept * .5, 'the blob in the card\'s path is picked up');
@@ -74,20 +70,62 @@ test('two fingers set the centre and angle without flipping the card end for end
   assert.equal(twoFingerPose({ x: 50, y: 50 }, { x: 53, y: 52 }, 30).angle, 30);
 });
 
-test('a pivot keeps the pinned end fixed through a full arc', () => {
-  for (const [angle, other] of [[0, false], [0, true], [90, false], [150, false], [-60, true]] as const) {
-    const pin = pinnedEnd({ centre: { x: 100, y: 100 }, angle }, 61, other);
-    const start = pivotPose(pin, angle, 61);
-    near(start.centre.x, 100); near(start.centre.y, 100);
-    for (const pose of pivotPath(pin, angle, angle + 170, 61)) {
-      const r = pose.angle * Math.PI / 180;
-      near(pose.centre.x - pin.side * Math.cos(r) * 30, pin.at.x); near(pose.centre.y - pin.side * Math.sin(r) * 30, pin.at.y);
-    }
+// Drives a steer along a path, applying each angle it returns as a pull would.
+const steerAlong = (path: { x: number; y: number }[], card: number, hold = () => false) => {
+  const steer = new PathSteer(path[0]);
+  const angles = [card];
+  for (const at of path.slice(1)) { card = steer.follow(at, card, hold()) ?? card; angles.push(card); }
+  return angles;
+};
+const turnedBy = (from: number, to: number) => normaliseAngle(to - from);
+
+test('steering keeps a straight pull straight at any angle, despite hand shake', () => {
+  for (const card of [0, 35, 90, -120]) {
+    const path = Array.from({ length: 80 }, (_, step) => ({ x: step * 1.8 + Math.sin(step * 2.7) * .5, y: step * 2.4 + Math.cos(step * 1.9) * .5 }));
+    for (const angle of steerAlong(path, card)) assert.ok(Math.abs(turnedBy(card, angle)) < 5, `${angle} drifted from ${card}`);
   }
-  assert.equal(pivotPath(pinnedEnd({ centre: { x: 0, y: 0 }, angle: 0 }, 61), 0, 30, 61).length, 10);
-  // The left end of a level card, and the top end of an upright one.
-  assert.ok(pinnedEnd({ centre: { x: 100, y: 100 }, angle: 180 }, 61).at.x < 100);
-  assert.ok(pinnedEnd({ centre: { x: 100, y: 100 }, angle: -90 }, 61).at.y < 100);
+});
+
+test('the sway of a trackpad stroke does not turn the card', () => {
+  // A pull that weaves 2 cells either side of straight, every 60 cells.
+  const path = Array.from({ length: 400 }, (_, step) => ({ x: step, y: 2 * Math.sin(step / 60 * 2 * Math.PI) }));
+  for (const angle of steerAlong(path, 90)) assert.equal(angle, 90);
+});
+
+test('steering turns the card with a curve, by as much as the path turns', () => {
+  for (const card of [0, 30]) {
+    // A quarter circle, from heading down to heading left.
+    const path = Array.from({ length: 91 }, (_, degree) => { const r = degree * Math.PI / 180; return { x: 100 * Math.cos(r), y: 100 * Math.sin(r) }; });
+    const angles = steerAlong(path, card);
+    // Steering takes a little travel to find the heading and trails it by its
+    // slack, but keeps pace with it:
+    // between 30° and 80° round the curve, the card turns about 50° too.
+    near(turnedBy(angles[30], angles[80]), 50, 4);
+    // It turns gradually, never by a jolt.
+    for (let i = 1; i < angles.length; i++) assert.ok(Math.abs(turnedBy(angles[i - 1], angles[i])) < 8);
+  }
+});
+
+test('doubling back does not spin the card round', () => {
+  const path = [...Array.from({ length: 40 }, (_, step) => ({ x: step * 2, y: 0 })), ...Array.from({ length: 40 }, (_, step) => ({ x: 78 - step * 2, y: 0 }))];
+  for (const angle of steerAlong(path, 20)) assert.equal(angle, 20);
+});
+
+test('holding keeps the angle through a curve, and steering picks up from there', () => {
+  const path = Array.from({ length: 181 }, (_, degree) => { const r = degree * Math.PI / 180; return { x: 100 * Math.cos(r), y: 100 * Math.sin(r) }; });
+  let step = 0;
+  const angles = steerAlong(path, 0, () => step++ < 90);
+  near(angles[90], 0);
+  near(turnedBy(angles[120], angles[170]), 50, 4);
+});
+
+test('a card turned mid-pull steers on from its new angle', () => {
+  const steer = new PathSteer({ x: 0, y: 0 });
+  let card = 0;
+  for (let step = 1; step <= 20; step++) card = steer.follow({ x: 0, y: step * 3 }, card) ?? card;
+  card = 30; steer.rebase(card);
+  for (let step = 21; step <= 40; step++) card = steer.follow({ x: 0, y: step * 3 }, card) ?? card;
+  near(card, 30);
 });
 
 test('a card turning as it pulls leaves a continuous ribbon, without pinholes', () => {

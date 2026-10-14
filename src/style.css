@@ -49,8 +49,6 @@ h1 { font: 25px/1.1 'DynaPuff', 'Nunito', sans-serif; font-weight: 500; letter-s
 .tool-cursor.lifted { opacity: .65; filter: drop-shadow(5px 8px 4px #51483333); }
 .tool-cursor.touching { opacity: .95; }
 .tool-cursor.scrape.lifted { opacity: 1; filter: drop-shadow(2px 4px 2px #51483338); }
-/* The end of the card held still while pivoting. */
-.scrape-pin { position: absolute; z-index: 4; width: 12px; height: 12px; border: 2px solid var(--coral); border-radius: 50%; background: #fffdf8cc; transform: translate(-50%, -50%); pointer-events: none; }
 .tool-cursor.scrape.touching { opacity: 1; filter: drop-shadow(0 1px .6px #51483338); }
 .tool-cursor.paint.lifted, .tool-cursor.paint.touching { opacity: 1; filter: none; }
 .tool-cursor.paint.lifted .tube-art { filter: drop-shadow(5px 9px 5px #3c33283b); }

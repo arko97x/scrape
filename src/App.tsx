@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ArrowDownRight, Download, Plus } from 'lucide-react';
-import { normaliseAngle, PaintEngine, PaintHistory, type Point } from './engine';
+import { PaintEngine, PaintHistory, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
 import { loadPainting, savePainting } from './storage';
@@ -12,7 +12,7 @@ import { DISPENSE_RELEASE_MS } from './dispense-motion';
 import { squeegeeAnchor, squeegeeWidthScale, type BladeKind } from './squeegee-geometry';
 import { penWidths, StudioDock, studioColours as colours, type StudioTool as Tool } from './StudioDock';
 import { rgb, pigmentBlend } from './pigment';
-import { pinnedEnd, pivotPath, pivotPose, pointAngle, twoFingerPose, type Pin } from './scrape-grip';
+import { PathSteer, twoFingerPose } from './scrape-grip';
 import { Welcome } from './Welcome';
 import { About } from './About';
 
@@ -21,15 +21,14 @@ const WELCOMED = 'scrape:welcomed';
 const welcomed = () => { try { return localStorage.getItem(WELCOMED) === '1'; } catch { return false; } };
 /** How the scraper is held. A touch waits briefly for a second finger before it
  *  starts pulling, so a two-finger grip doesn't smear first; `pending` buffers its
- *  path meanwhile. The card's centre can sit off the pointer after a pivot, by `offset`. */
+ *  path meanwhile. A mouse or stylus has no second finger, so its path steers. */
 type Grip = {
   touch: boolean; fingers: Map<number, Point>; pending: Point[] | null; timer?: ReturnType<typeof setTimeout>;
-  centre: Point; pointer: Point; offset: Point; pin: Pin | null; pinAngle: number;
+  centre: Point; steer: PathSteer | null;
 };
 type Gesture = { pointerId: number; squeeze?: SqueezeStroke; pen?: InkStroke; grip?: Grip };
 const SECOND_FINGER_MS = 150, SECOND_FINGER_SLOP = 6;
 const coarsePointer = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
-const pivotKey = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent) ? 'Option' : 'Alt';
 type Runtime = { engine: PaintEngine; history: PaintHistory; renderer: PaintRenderer };
 
 export function App() {
@@ -64,7 +63,6 @@ export function App() {
   const [hasPaint, setHasPaint] = useState(false);
   const [credits, setCredits] = useState(false);
   const [welcome, setWelcome] = useState(() => !welcomed());
-  const [pin, setPin] = useState<Point | null>(null);
   const [touchFirst] = useState(coarsePointer);
 
   const refresh = () => {
@@ -114,7 +112,7 @@ export function App() {
       setReady(true); refresh();
     }).catch(() => { if (!stopped) { setStorageWarning(true); setReady(true); } });
     const interrupt = () => {
-      if (gesture.current) { gesture.current.squeeze?.finish(performance.now()); clearTimeout(gesture.current.grip?.timer); engine.endScrape(); gesture.current = null; setContact(false); setPin(null); refresh(); persist(); }
+      if (gesture.current) { gesture.current.squeeze?.finish(performance.now()); clearTimeout(gesture.current.grip?.timer); engine.endScrape(); gesture.current = null; setContact(false); refresh(); persist(); }
       dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null);
     };
     const onVisibility = () => { if (document.hidden) interrupt(); };
@@ -153,23 +151,11 @@ export function App() {
     current.engine.turn(current.engine.angle + by); setAngle(current.engine.angle); persist();
   };
 
-  // One pointer holds the card's centre. With the pivot key down, one end is
-  // pinned and the card swings round it as the pointer circles the pin.
-  const holdOne = (engine: PaintEngine, grip: Grip, at: Point, pivot: boolean, otherEnd: boolean) => {
-    grip.pointer = at;
-    if (pivot && !grip.pin) {
-      grip.pin = pinnedEnd({ centre: grip.centre, angle: engine.angle }, engine.bladeWidth, otherEnd);
-      grip.pinAngle = pointAngle(grip.pin.at, at); setPin(grip.pin.at);
-    } else if (!pivot && grip.pin) {
-      grip.pin = null; grip.offset = { x: grip.centre.x - at.x, y: grip.centre.y - at.y }; setPin(null);
-    }
-    if (!grip.pin) { grip.centre = { x: at.x + grip.offset.x, y: at.y + grip.offset.y }; engine.scrape(grip.centre); return; }
-    // Right by the pin, the pointer's direction from it is too jumpy to steer by.
-    if (Math.hypot(at.x - grip.pin.at.x, at.y - grip.pin.at.y) < 4) return;
-    const heading = pointAngle(grip.pin.at, at), target = engine.angle + normaliseAngle(heading - grip.pinAngle);
-    grip.pinAngle = heading;
-    for (const pose of pivotPath(grip.pin, engine.angle, target, engine.bladeWidth)) engine.scrape(pose.centre, pose.angle);
-    grip.centre = pivotPose(grip.pin, engine.angle, engine.bladeWidth).centre;
+  // One pointer holds the card's centre. A mouse or stylus steers it round
+  // curves; Shift keeps its angle.
+  const holdOne = (engine: PaintEngine, grip: Grip, at: Point, hold: boolean) => {
+    grip.centre = at;
+    engine.scrape(at, grip.steer?.follow(at, engine.angle, hold) ?? engine.angle);
   };
   // Two fingers hold the card's ends.
   const holdTwo = (engine: PaintEngine, grip: Grip) => {
@@ -183,22 +169,11 @@ export function App() {
     const [first, ...rest] = grip.pending ?? []; grip.pending = null;
     if (!first) return;
     engine.beginScrape(first); grip.centre = first;
-    for (const point of rest) holdOne(engine, grip, point, false, false);
+    for (const point of rest) holdOne(engine, grip, point, false);
   };
   const showGrip = (engine: PaintEngine, grip: Grip) => { setCursor(grip.centre); setAngle(engine.angle); setCarriedPaint(bladePaint(engine)); };
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
-      if (event.key === 'Alt' && selected.current === 'scrape' && ready) {
-        // Alt pins an end mid-pull. Keep it from opening browser menus.
-        event.preventDefault();
-        const grip = gesture.current?.grip, current = runtime.current;
-        if (grip && current && !grip.pending && grip.fingers.size === 1) {
-          holdOne(current.engine, grip, grip.pointer, event.type === 'keydown', event.shiftKey);
-          showGrip(current.engine, grip);
-        }
-        return;
-      }
-      if (event.type !== 'keydown') return;
       if (gesture.current || !ready || document.querySelector('dialog[open]')) return;
       if (event.key === 'Escape') { setKeyboardMotion(true); setSettingsOpen(false); dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null); canvas.current?.blur(); return; }
       if ((event.target as HTMLElement).matches('input, textarea, select')) return;
@@ -211,8 +186,7 @@ export function App() {
       else if (event.key.toLowerCase() === 'n') selectPen();
       else if ((event.key === '[' || event.key === ']') && selected.current === 'scrape') turnBlade(event.key === '[' ? -15 : 15);
     };
-    window.addEventListener('keydown', keyboard); window.addEventListener('keyup', keyboard);
-    return () => { window.removeEventListener('keydown', keyboard); window.removeEventListener('keyup', keyboard); };
+    window.addEventListener('keydown', keyboard); return () => window.removeEventListener('keydown', keyboard);
   }, [ready]);
 
   // Scrolling over the paper turns the card: in the air, or live mid-pull.
@@ -224,11 +198,11 @@ export function App() {
       if (!current || selected.current !== 'scrape' || event.ctrlKey) return;
       event.preventDefault();
       const grip = active?.grip;
-      if (active && (!grip || grip.pending || grip.fingers.size > 1 || grip.pin)) return;
+      if (active && (!grip || grip.pending || grip.fingers.size > 1)) return;
       const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1;
       const delta = (Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX) * scale * .15;
       const by = Math.max(-30, Math.min(30, delta));
-      if (grip) { current.engine.scrape(grip.centre, current.engine.angle + by); showGrip(current.engine, grip); }
+      if (grip) { current.engine.scrape(grip.centre, current.engine.angle + by); grip.steer?.rebase(current.engine.angle); showGrip(current.engine, grip); }
       else turnBlade(by);
     };
     paper.addEventListener('wheel', wheel, { passive: false });
@@ -267,7 +241,7 @@ export function App() {
     } else if (selected.current === 'pen') {
       gesture.current = { pointerId: event.pointerId, pen: current.engine.beginInk(point, rgb(penColour), penWidth) };
     } else {
-      const grip: Grip = { touch: event.pointerType === 'touch', fingers: new Map([[event.pointerId, point]]), pending: null, centre: point, pointer: point, offset: { x: 0, y: 0 }, pin: null, pinAngle: 0 };
+      const grip: Grip = { touch: event.pointerType === 'touch', fingers: new Map([[event.pointerId, point]]), pending: null, centre: point, steer: event.pointerType === 'touch' ? null : new PathSteer(point) };
       gesture.current = { pointerId: event.pointerId, grip };
       if (event.pointerType === 'touch') {
         grip.pending = [point];
@@ -276,10 +250,7 @@ export function App() {
           if (!now || gesture.current?.grip !== grip || !grip.pending) return;
           settleOneFinger(now.engine, grip); showGrip(now.engine, grip);
         }, SECOND_FINGER_MS);
-      } else {
-        current.engine.beginScrape(point);
-        if (event.altKey) holdOne(current.engine, grip, point, true, event.shiftKey);
-      }
+      } else current.engine.beginScrape(point);
     }
     refresh();
   };
@@ -306,7 +277,7 @@ export function App() {
       const at = pointFrom(sample.clientX, sample.clientY);
       if (active.squeeze) active.squeeze.move(at);
       else if (active.pen) current.engine.extendInk(active.pen, at);
-      else if (grip) holdOne(current.engine, grip, at, event.altKey, event.shiftKey);
+      else if (grip) holdOne(current.engine, grip, at, event.shiftKey);
     }
     if (grip) showGrip(current.engine, grip);
     if (active.squeeze && event.pointerType === 'pen' && event.pressure > 0) active.squeeze.flow = .5 + event.pressure * 1.5;
@@ -321,7 +292,7 @@ export function App() {
       const point = pointFrom(event.clientX, event.clientY);
       if (active.squeeze) { active.squeeze.move(point); active.squeeze.finish(performance.now()); }
       else if (active.pen) current.engine.extendInk(active.pen, point);
-      else if (grip && grip.fingers.size === 1) holdOne(current.engine, grip, point, event.altKey, event.shiftKey);
+      else if (grip && grip.fingers.size === 1) holdOne(current.engine, grip, point, event.shiftKey);
     } else {
       active.squeeze?.finish(performance.now());
     }
@@ -337,10 +308,9 @@ export function App() {
       dispensingTube.current?.cancel(); releaseUntil.current = 0;
       if (event.pointerType === 'touch') setCursor(null);
     }
-    clearTimeout(grip?.timer); current.engine.endScrape(); gesture.current = null; setContact(false); setPin(null);
+    clearTimeout(grip?.timer); current.engine.endScrape(); gesture.current = null; setContact(false);
     // Lifting either finger lifts the card; the other one is let go too.
     for (const id of grip ? grip.fingers.keys() : [event.pointerId]) if (event.currentTarget.hasPointerCapture(id)) event.currentTarget.releasePointerCapture(id);
-    if (grip) setCursor(event.pointerType === 'touch' ? null : grip.pointer);
     refresh(); persist();
   };
   const exportPainting = async () => {
@@ -371,13 +341,12 @@ export function App() {
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
           {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
           {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working" blade={blade}/> : tool === 'pen' ? <Pen colour={penColour}/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
-          {pin && contact && tool === 'scrape' && <div className="scrape-pin" style={{ left: `${pin.x / W * 100}%`, top: `${pin.y / H * 100}%` }} aria-hidden="true"/>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>
       </div>
     </section>
 
-    <div className="dock-guidance" role="status">{tool === 'paint' ? 'Hold to squeeze · drag to lay a bead' : tool === 'pen' ? 'Drag to draw · lift to finish' : touchFirst ? 'Drag to pull · two fingers to turn' : `Drag to pull · scroll to turn · hold ${pivotKey} to pivot`}</div>
+    <div className="dock-guidance" role="status">{tool === 'paint' ? 'Hold to squeeze · drag to lay a bead' : tool === 'pen' ? 'Drag to draw · lift to finish' : touchFirst ? 'Drag to pull · two fingers to turn' : 'Drag to pull · curve to steer · scroll to turn'}</div>
     <StudioDock tool={tool} open={settingsOpen} onOpen={setSettingsOpen} disabled={!ready || contact}
       onSelect={next => next === 'paint' ? selectPaint(paint) : next === 'pen' ? selectPen() : selectScraper()}
       paint={paint} onPaint={selectPaint} penColour={penColour} penWidth={penWidth} onPenColour={setPenColour} onPenWidth={setPenWidth}

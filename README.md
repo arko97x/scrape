@@ -48,12 +48,12 @@ laying paint for as long as its load lasts.
 The card turns to any angle, and keeps its paint as it turns. On touch, two
 fingers hold its ends: the card sits between them and turns as they do, and
 holding one finger still while the other sweeps round swings a fan. With a
-mouse or trackpad, scrolling over the paper turns the card, in the air or
-mid-pull, and [ and ] turn it by 15°. Holding Alt (Option on a Mac) mid-pull
-pins the card's left end, or its top end when upright, and the card swings
-round it as the pointer circles; add Shift to pin the other end. Turn switches
-it between level and upright, also keeping its paint. Choosing another card
-starts it clean.
+mouse, trackpad or stylus, the path steers: the card keeps the angle it made
+with the direction of the pull, so straight pulls stay straight and curves turn
+it with them. Hold Shift to keep its angle through a curve. Scrolling over the
+paper turns the card, in the air or mid-pull, and [ and ] turn it by 15°. Turn
+switches it between level and upright, also keeping its paint. Choosing another
+card starts it clean.
 
 ## Checks
 
