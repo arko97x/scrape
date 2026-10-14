@@ -207,7 +207,7 @@ function Demo({ step, reduced }: { step: number; reduced: boolean }) {
 const steps = [
   { title: 'Squeeze some paint', body: 'Pick a colour and press on the paper. Hold still for a bigger blob, or drag to lay a line of paint.' },
   { title: 'Scrape it across', body: 'Pick the scraper and pull it through the paint. The flat card spreads colours smooth; the comb leaves ridges. Turn tilts the card.' },
-  { title: 'Draw, undo, keep', body: 'The pen draws on top of the paint. Undo takes back a step, and Keep this one saves your painting as a picture. Scrape also remembers it in this browser.' },
+  { title: 'Draw, undo, keep', body: 'The pen draws on top of the paint. Undo takes back a step, and the download button saves your painting as a picture. Scrape also remembers it in this browser.' },
 ];
 
 export function Welcome({ onClose }: { onClose: () => void }) {

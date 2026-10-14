@@ -21,6 +21,7 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .new-sheet, .export-button { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
 .export-button { padding: 12px 18px; border: 1px solid #596650; border-radius: 4px; background: #eee9dc66; }
 .export-button:disabled { opacity: .4; }
+.header-actions .export-button { justify-content: center; width: 44px; height: 44px; padding: 0; }
 .eyebrow { font-size: 9px; letter-spacing: 1.9px; font-weight: 600; color: #7c826f; }
 h1 { font: 25px/1.1 'DynaPuff', 'Nunito', sans-serif; font-weight: 500; letter-spacing: -.35px; margin: 10px 0 0; }
 .tube-art { display: block; margin: auto; overflow: hidden; filter: drop-shadow(1px 2px 1px #3b322638) drop-shadow(3px 5px 3px #4e493428); }
@@ -84,7 +85,6 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'Nunito', sans-
   .header { min-height: 84px; gap: 15px; }
   .wordmark { font-size: 43px; }
   .header-actions { gap: 10px; }
-  .export-button { padding: 10px 12px; }
   .paper-area { grid-column: 1; grid-row: 1; }
 }
 @media (max-width: 560px) {
@@ -93,7 +93,6 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'Nunito', sans-
   .wordmark { font-size: 38px; }
   .new-sheet span { display: none; }
   .header-actions { gap: 3px; font-size: 12px; }
-  .export-button { gap: 4px; padding: 10px 9px; }
   .paper-area { width: 100%; }
   .save-status { margin-left: 0; flex-basis: 100%; text-align: center; padding-top: 5px; }
   kbd { display: none; }

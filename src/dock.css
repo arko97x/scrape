@@ -10,7 +10,7 @@
 .dock-studio .wordmark { font-size: 42px; }
 .dock-studio .header-caption { padding-top: 6px; font-size: 11px; }
 .dock-studio .header-actions { gap: 20px; }
-.dock-studio .export-button { padding: 10px 15px; border-radius: var(--ui-radius); }
+.dock-studio .export-button { border-radius: var(--ui-radius); }
 .dock-studio .new-sheet { min-height: 44px; }
 .dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--safe-bottom)); padding: 24px 0; }
 .dock-studio .paper-area { width: 100%; }
