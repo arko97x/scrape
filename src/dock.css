@@ -83,16 +83,20 @@
 .paint-swatch:active:not(:disabled) > .swatch-dot { transform: scale(.95); }
 .dock-colour { position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex-shrink: 0; }
 .custom-colour { --swatch: 32px; width: 44px; min-height: 44px; align-self: stretch; display: flex; align-items: center; justify-content: center; }
-.custom-colour > svg { width: var(--swatch); height: var(--swatch); stroke-width: 1.3; padding: calc(var(--swatch) / 8); border-radius: 50%; background: conic-gradient(#c55c43, #e5b84e, #7a8963, #649295, #d99092, #c55c43); color: #faf7ef; }
-.custom-colour[data-selected=true] > svg { outline: 2px solid var(--ink); outline-offset: 3px; }
+.custom-colour > .custom-face { width: var(--swatch); height: var(--swatch); border-radius: 50%; }
+.custom-colour > svg { stroke-width: 1.3; padding: calc(var(--swatch) / 8); background: conic-gradient(#c55c43, #e5b84e, #7a8963, #649295, #d99092, #c55c43); color: #faf7ef; }
+/* A picked colour sits in a plain dot like the presets, and its selection
+   ring is a rainbow in the same place as their ink ring. */
+.custom-picked { position: relative; border: 1px solid #0002; background: var(--picked); }
+.custom-picked::after { content: ""; position: absolute; inset: -6px; padding: 2px; border-radius: 50%; background: conic-gradient(#ff4d4d, #ffb829, #e8f53a, #4fd16b, #2fc7e8, #4a6bff, #b84dff, #ff4dc4, #ff4d4d); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 .dock-colour input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; padding: 0; border: 0; }
 /* Focus rings sit on the round swatch itself, matching the selected ring,
    rather than on the square hit area around it. */
 .paint-swatch:focus-visible { outline: none; }
 .paint-swatch:focus-visible > .swatch-dot { outline: 2px solid var(--coral); outline-offset: 3px; }
-/* Chrome treats a clicked colour input as focus-visible, so an open picker
-   gets the same ink ring as a selected swatch rather than the focus colour. */
-.custom-colour:focus-within > svg { outline: 2px solid var(--ink); outline-offset: 3px; }
+/* Chrome treats a clicked colour input as focus-visible, so the custom
+   swatch tracks pointer presses itself and rings only keyboard focus. */
+.custom-colour[data-pointer=false]:focus-within > .custom-face { outline: 2px solid var(--coral); outline-offset: 3px; }
 .dock-choices { display: flex; gap: 4px; padding-right: 10px; }
 .dock-choice { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: var(--ui-radius); color: #8a9483; transition: background-color 125ms var(--ease-out), color 125ms var(--ease-out); }
 .dock-choice svg { width: 26px; height: 26px; }

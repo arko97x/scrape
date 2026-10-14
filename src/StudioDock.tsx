@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import { ChevronDown, ChevronUp, Info, Palette, Redo2, RotateCw, Undo2 } from 'lucide-react';
 import { Pen, Squeegee, Tube } from './tools';
 import type { BladeKind } from './squeegee-geometry';
@@ -34,13 +34,19 @@ const inkColours = [
   { name: 'lake', hex: '#649295' }, { name: 'cream', hex: '#f5f1e5' },
 ];
 
-/** The rainbow "any colour" swatch shared by the paint palette and the pen inks. */
+/** The rainbow "any colour" swatch shared by the paint palette and the pen inks.
+ *  While its colour is in use it shows that colour inside a rainbow ring. */
 function CustomColour({ label, value, selected, disabled, onChange, events, tip, describedBy }: {
   label: string; value: string; selected: boolean; disabled: boolean;
   onChange: (hex: string) => void; events: LabelEvents; tip: ReactNode; describedBy: string;
 }) {
-  return <label className="dock-colour custom-colour" data-selected={selected} {...events}>
-    <Palette aria-hidden="true"/>
+  // A click opens the picker; only keyboard focus should draw a focus ring.
+  const [pointer, setPointer] = useState(false);
+  return <label className="dock-colour custom-colour" data-selected={selected} data-pointer={pointer} {...events}
+    onPointerDown={() => { events.onPointerDown(); setPointer(true); }} onBlur={() => { events.onBlur(); setPointer(false); }}>
+    {selected
+      ? <span className="custom-face custom-picked" style={{ '--picked': value } as CSSProperties} aria-hidden="true"/>
+      : <Palette className="custom-face" aria-hidden="true"/>}
     <input type="color" aria-label={label} aria-describedby={describedBy} value={value} disabled={disabled} onChange={event => onChange(event.target.value)}/>
     {tip}
   </label>;
