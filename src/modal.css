@@ -48,6 +48,9 @@
 .welcome-history:nth-of-type(2) { left: 95.5%; }
 .welcome-pointer { position: absolute; z-index: 6; width: calc(22 * var(--k)); height: auto; transform-origin: 2px 2px; filter: drop-shadow(0 2px 2px #1f2a2233); transition: transform 120ms var(--ease-out); }
 .welcome-pointer[data-pressed=true] { transform: scale(.82); }
+/* A fingertip, for touch screens: in the dock tap, and holding the card's ends. */
+.welcome-finger { position: absolute; z-index: 6; width: calc(30 * var(--k)); aspect-ratio: 1; border-radius: 50%; background: #1f2a2238; box-shadow: 0 0 0 2px #fffdf8cc, 0 2px 4px #1f2a2233; transform: translate(-50%, -50%); transition: transform 120ms var(--ease-out); pointer-events: none; }
+.welcome-finger[data-pressed=true] { transform: translate(-50%, -50%) scale(.82); background: #1f2a2250; }
 .welcome-tap { position: absolute; z-index: 4; width: calc(56 * var(--k)); aspect-ratio: 1; border-radius: 50%; border: 2px solid #b85943; transform: translate(-50%, -50%) scale(.3); opacity: 0; animation: welcome-tap 520ms var(--ease-out); }
 @keyframes welcome-tap { from { opacity: .7; transform: translate(-50%, -50%) scale(.3); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.2); } }
 .welcome-chip { position: absolute; z-index: 4; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: #fffdf8e8; box-shadow: 0 1px 3px #2632271f; font-size: 12px; font-weight: 700; color: var(--ink); }

@@ -8,6 +8,7 @@ import { bladePaint, type BladePaintBand } from './blade-paint';
 import { squeegeeAnchor, squeegeeWidthScale, type BladeKind } from './squeegee-geometry';
 import { Pen, Squeegee, Tube } from './tools';
 import { rgb, pigmentBlend } from './pigment';
+import { PathSteer } from './scrape-grip';
 import { Modal } from './Modal';
 import './modal.css';
 
@@ -16,13 +17,15 @@ import './modal.css';
 const W = 320, H = 240;
 
 type Tool = 'paint' | 'pen' | 'scrape';
-type Cursor = { tool: Tool; at: Point; touching: boolean; colour?: string; blade?: BladeKind };
-type Frame = { cursor: Cursor | null; label?: string; undo?: boolean };
-// Each demo first picks its tool from the dock, then the camera pans up to the paper.
-type Demo = { tool: Tool; before: Tool; length: number; start: (engine: PaintEngine, loop: number) => (t: number) => Frame };
+type Cursor = { tool: Tool; at: Point; touching: boolean; colour?: string; blade?: BladeKind; angle?: number; width?: number };
+type Frame = { cursor: Cursor | null; label?: string; undo?: boolean; fingers?: Point[]; pointer?: { at: Point; pressed: boolean } };
+// Each demo first picks its tool from the dock, then the camera pans up to the
+// paper. `touch` picks the version for a touch screen over a mouse or trackpad.
+type Demo = { tool: Tool; before: Tool; length: number; start: (engine: PaintEngine, loop: number, touch: boolean) => (t: number) => Frame };
 
 const ease = (u: number) => u < .5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
 const clamp = (u: number) => Math.max(0, Math.min(1, u));
+const smooth = (u: number) => u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
 const glide = (from: Point, to: Point, u: number): Point => { const k = ease(clamp(u)); return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k }; };
 
 const colourNames: Record<string, string> = { '#e5b84e': 'Butter', '#c55c43': 'Tomato', '#649295': 'Lake' };
@@ -31,6 +34,9 @@ const squeezes = [
   { colour: '#c55c43', from: 1900, to: 2700, path: (): Point => ({ x: 158, y: 136 }) },
   { colour: '#649295', from: 3200, to: 4600, path: (u: number): Point => ({ x: 206 + 52 * u, y: 72 + 96 * u + 16 * Math.sin(u * Math.PI * 2) }) },
 ];
+
+// The turning demo's card is shorter, so it stays on the sheet as it swings.
+const TURN_WIDTH = 130;
 
 // A row of dollops like the reference study, ready for one pull.
 const dollops = (engine: PaintEngine) => {
@@ -72,6 +78,51 @@ const demos: Demo[] = [
       return { cursor: { tool: 'scrape', at, touching: u < 1, blade }, label };
     };
   } },
+  { tool: 'scrape', before: 'paint', length: 4600, start: (engine, _loop, touch) => {
+    engine.clear(); engine.setBlade(TURN_WIDTH, 0, 'flat'); dollops(engine);
+    const half = (TURN_WIDTH - 1) / 2;
+    // Both versions sweep the card round the same quarter turn.
+    const path = (u: number): Point => { const r = smooth(u) * Math.PI / 2; return { x: 112 + 112 * (1 - Math.cos(r)), y: 46 + 128 * Math.sin(r) }; };
+    if (touch) {
+      // Two fingers hold the card's ends and twist as they pull, keeping it
+      // square to the curve.
+      const pose = (u: number) => {
+        const r = smooth(u) * Math.PI / 2;
+        return { at: path(u), angle: Math.atan2(128 * Math.cos(r), 112 * Math.sin(r)) * 180 / Math.PI - 90 };
+      };
+      const ends = ({ at, angle }: { at: Point; angle: number }) => {
+        const r = angle * Math.PI / 180;
+        return [{ x: at.x - Math.cos(r) * half, y: at.y - Math.sin(r) * half }, { x: at.x + Math.cos(r) * half, y: at.y + Math.sin(r) * half }];
+      };
+      let pulling = false;
+      return t => {
+        const card = (at: Point, angle: number, touching: boolean): Cursor => ({ tool: 'scrape', at, touching, angle, width: TURN_WIDTH });
+        if (t < 600) return { cursor: card(glide({ x: 112, y: 18 }, pose(0).at, t / 600), 0, false), label: 'Two fingers' };
+        const u = clamp((t - 600) / 2800), now = pose(u);
+        if (u >= 1) {
+          // Lifted, the card turns level for the next pull.
+          if (pulling) { engine.endScrape(); engine.turn(0); pulling = false; }
+          return { cursor: card(glide(now.at, { x: 288, y: 120 }, (t - 3400) / 700), 0, false), label: 'Two fingers' };
+        }
+        if (!pulling) { engine.beginScrape(now.at); pulling = true; } else engine.scrape(now.at, now.angle);
+        return { cursor: card(now.at, now.angle, true), fingers: ends(now), label: 'Two fingers' };
+      };
+    }
+    // With a mouse, a curving drag steers the card round with it.
+    let pulling = false, steer = new PathSteer(path(0));
+    return t => {
+      const card = (at: Point, angle: number, touching: boolean): Cursor => ({ tool: 'scrape', at, touching, angle, width: TURN_WIDTH });
+      if (t < 600) return { cursor: card(glide({ x: 112, y: 18 }, path(0), t / 600), 0, false), label: 'Curve to steer' };
+      const u = clamp((t - 600) / 2800), at = path(u);
+      if (u >= 1) {
+        if (pulling) { engine.endScrape(); engine.turn(0); pulling = false; }
+        return { cursor: card(glide(at, { x: 288, y: 120 }, (t - 3400) / 700), 0, false), label: 'Curve to steer' };
+      }
+      if (!pulling) { engine.beginScrape(at); steer = new PathSteer(at); pulling = true; }
+      else engine.scrape(at, steer.follow(at, engine.angle) ?? engine.angle);
+      return { cursor: card(at, engine.angle, true), pointer: { at, pressed: true }, label: 'Curve to steer' };
+    };
+  } },
   { tool: 'pen', before: 'scrape', length: 5400, start: engine => {
     engine.clear(); engine.setBlade(240, 0, 'flat'); dollops(engine);
     engine.beginScrape({ x: 160, y: 46 });
@@ -100,7 +151,6 @@ const demos: Demo[] = [
 const PRELUDE = 2300, OUTRO = 450, PAN = 92, SLOT_Y = 312;
 const slots: Record<Tool, number> = { paint: 84, pen: 136, scrape: 192 };
 const toolNames: Record<Tool, string> = { paint: 'Paint', pen: 'Pen', scrape: 'Scraper' };
-const smooth = (u: number) => u < .5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
 
 type Shot = Frame & { pan: number; fade: number; armed: Tool; pointer?: { at: Point; pressed: boolean }; tap?: Point };
 
@@ -126,13 +176,14 @@ function MiniDock({ armed }: { armed: Tool }) {
   </div>;
 }
 
-function Pointer({ at, pressed }: { at: Point; pressed: boolean }) {
+function Pointer({ at, pressed, touch }: { at: Point; pressed: boolean; touch: boolean }) {
+  if (touch) return <span className="welcome-finger" data-pressed={pressed} style={percent(at)}/>;
   return <svg className="welcome-pointer" data-pressed={pressed} viewBox="0 0 16 22" style={percent(at)}>
     <path d="M1.5 1.5V17.5L5.6 13.6L8.6 20.2L11.3 19L8.4 12.6H14Z" fill="#1f2a22" stroke="#fffdf8" strokeWidth="1.4" strokeLinejoin="round"/>
   </svg>;
 }
 
-function Demo({ step, reduced }: { step: number; reduced: boolean }) {
+function Demo({ step, reduced, touch }: { step: number; reduced: boolean; touch: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const runtime = useRef<{ engine: PaintEngine; renderer: PaintRenderer } | null>(null);
   const [shot, setShot] = useState<Shot>({ cursor: null, pan: 1, fade: 0, armed: demos[step].before });
@@ -159,22 +210,23 @@ function Demo({ step, reduced }: { step: number; reduced: boolean }) {
     const { engine, renderer } = current, demo = demos[step];
     if (reduced) {
       // Show the finished state of each demo without motion.
-      const run = demo.start(engine, 0);
+      const run = demo.start(engine, 0, touch);
       let last: Frame = { cursor: null };
-      for (let t = 0; t <= demo.length; t += 16) { last = run(t); if (step === 2 && t > 3200) break; }
+      // The pen demo is shown with its doodle, before Undo takes it away.
+      for (let t = 0; t <= demo.length; t += 16) { last = run(t); if (demo.tool === 'pen' && t > 3200) break; }
       renderer.render(true); setShot({ label: last.label, cursor: null, pan: 0, fade: 1, armed: demo.tool }); setCarried([]);
       return;
     }
     let loop = 0, t = 0, previous = performance.now(), animation = 0;
-    let run = demo.start(engine, loop), first = run(0), last = first;
+    let run = demo.start(engine, loop, touch), first = run(0), last = first;
     const tick = (now: number) => {
       // Cap the step so a backgrounded tab doesn't jump the script ahead.
       t += Math.min(50, now - previous); previous = now;
-      if (t > PRELUDE + demo.length + OUTRO) { loop++; t = 0; run = demo.start(engine, loop); first = last = run(0); }
+      if (t > PRELUDE + demo.length + OUTRO) { loop++; t = 0; run = demo.start(engine, loop, touch); first = last = run(0); }
       let next: Shot;
       if (t < PRELUDE) next = prelude(demo, t, first);
       else if (t < PRELUDE + demo.length) { last = run(t - PRELUDE); next = { ...last, pan: 0, fade: 1, armed: demo.tool }; }
-      else next = { ...last, label: undefined, pan: 0, fade: 1 - clamp((t - PRELUDE - demo.length) / OUTRO), armed: demo.tool };
+      else next = { ...last, label: undefined, fingers: undefined, pointer: undefined, pan: 0, fade: 1 - clamp((t - PRELUDE - demo.length) / OUTRO), armed: demo.tool };
       renderer.render();
       setShot(next);
       if (next.cursor?.tool === 'scrape') setCarried(bladePaint(engine));
@@ -182,7 +234,7 @@ function Demo({ step, reduced }: { step: number; reduced: boolean }) {
     };
     animation = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(animation); engine.endScrape(); };
-  }, [step, reduced]);
+  }, [step, reduced, touch]);
 
   const { cursor } = shot;
   return <div className="welcome-demo" aria-hidden="true" style={{ '--pan': shot.pan, '--fade': shot.fade, '--pan-cells': PAN } as React.CSSProperties}>
@@ -192,10 +244,11 @@ function Demo({ step, reduced }: { step: number; reduced: boolean }) {
         <canvas ref={canvas} width={W * 2} height={H * 2}/>
         <MiniDock armed={shot.armed}/>
         {shot.tap && <span className="welcome-tap" style={percent(shot.tap)}/>}
-        {cursor && <div className={`tool-cursor ${cursor.tool} ${cursor.touching ? 'touching' : 'lifted'}`} style={{ ...percent(cursor.at), width: cursor.tool === 'scrape' ? `${170 / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': '0deg', '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties}>
+        {cursor && <div className={`tool-cursor ${cursor.tool} ${cursor.touching ? 'touching' : 'lifted'}`} style={{ ...percent(cursor.at), width: cursor.tool === 'scrape' ? `${(cursor.width ?? 170) / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${cursor.angle ?? 0}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties}>
           {cursor.tool === 'scrape' ? <Squeegee paint={carried} pose="working" blade={cursor.blade}/> : cursor.tool === 'pen' ? <Pen colour="#344c5a"/> : <Tube colour={cursor.colour ?? '#e5b84e'}/>}
         </div>}
-        {shot.pointer && <Pointer {...shot.pointer}/>}
+        {shot.fingers?.map((at, i) => <span key={i} className="welcome-finger" data-pressed="true" style={percent(at)}/>)}
+        {shot.pointer && <Pointer {...shot.pointer} touch={touch}/>}
       </div>
     </div>
     {failed && <p className="welcome-fallback">This browser can't show the paint demo, but the studio will explain itself as you go.</p>}
@@ -204,15 +257,20 @@ function Demo({ step, reduced }: { step: number; reduced: boolean }) {
   </div>;
 }
 
-const steps = [
+const stepsFor = (touch: boolean) => [
   { title: 'Squeeze some paint', body: 'Pick a colour and press on the paper. Hold still for a bigger blob, or drag to lay a line of paint.' },
-  { title: 'Scrape it across', body: 'Pick the scraper and pull it through the paint. The flat card spreads colours smooth; the comb leaves ridges. Turn tilts the card.' },
+  { title: 'Scrape it across', body: 'Pick the scraper and pull it through the paint. The flat card spreads colours smooth; the comb leaves ridges.' },
+  touch
+    ? { title: 'Turn as you pull', body: 'Hold the scraper with two fingers, one at each end. Twist them as you pull and the card turns too, sweeping paint into curves and fans.' }
+    : { title: 'Turn as you pull', body: 'Curve your drag and the card turns with it; drag straight and it stays put. Scroll over the paper to set its angle first, or hold Shift to keep it steady.' },
   { title: 'Draw, undo, keep', body: 'The pen draws on top of the paint. Undo takes back a step, and the download button saves your painting as a picture. Scrape also remembers it in this browser.' },
 ];
 
 export function Welcome({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
   const [reduced] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+  const [touch] = useState(() => window.matchMedia?.('(pointer: coarse)').matches ?? false);
+  const steps = stepsFor(touch);
   const last = step === steps.length - 1;
   const keys = (event: KeyboardEvent) => {
     if (event.key === 'ArrowRight' && !last) setStep(step + 1);
@@ -221,7 +279,7 @@ export function Welcome({ onClose }: { onClose: () => void }) {
   return <Modal id="welcome" label="How Scrape works" className="welcome" closeOnBackdrop={false} onClose={onClose}>
     <div className="welcome-layout" onKeyDown={keys}>
       <p className="welcome-hello"><span className="modal-mark">scrape<span className="brand-dot">.</span></span></p>
-      <Demo step={step} reduced={reduced}/>
+      <Demo step={step} reduced={reduced} touch={touch}/>
       <div className="welcome-text" aria-live="polite">
         <p className="welcome-count">{step + 1} of {steps.length}</p>
         <h2>{steps[step].title}</h2>
