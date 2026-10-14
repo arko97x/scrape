@@ -55,6 +55,10 @@ paper turns the card, in the air or mid-pull, and [ and ] turn it by 15°. Turn
 switches it between level and upright, also keeping its paint. Choosing another
 card starts it clean.
 
+Every pull starts level. Whatever angle a pull ends at, lifting the card turns
+it back to 0°, so an angle set by scrolling, [ ], or Turn applies to the next
+pull only.
+
 ## Checks
 
 ```sh

@@ -48,7 +48,8 @@ h1 { font: 25px/1.1 'DynaPuff', 'Nunito', sans-serif; font-weight: 500; letter-s
 .tool-cursor .squeegee-art { width: 100%; }
 .tool-cursor.lifted { opacity: .65; filter: drop-shadow(5px 8px 4px #51483333); }
 .tool-cursor.touching { opacity: .95; }
-.tool-cursor.scrape.lifted { opacity: 1; filter: drop-shadow(2px 4px 2px #51483338); }
+.tool-cursor.scrape.lifted { opacity: 1; filter: drop-shadow(2px 4px 2px #51483338); transition: transform 200ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .tool-cursor.scrape.lifted { transition: none; } }
 .tool-cursor.scrape.touching { opacity: 1; filter: drop-shadow(0 1px .6px #51483338); }
 .tool-cursor.paint.lifted, .tool-cursor.paint.touching { opacity: 1; filter: none; }
 .tool-cursor.paint.lifted .tube-art { filter: drop-shadow(5px 9px 5px #3c33283b); }

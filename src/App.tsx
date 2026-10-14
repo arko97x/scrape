@@ -112,7 +112,7 @@ export function App() {
       setReady(true); refresh();
     }).catch(() => { if (!stopped) { setStorageWarning(true); setReady(true); } });
     const interrupt = () => {
-      if (gesture.current) { gesture.current.squeeze?.finish(performance.now()); clearTimeout(gesture.current.grip?.timer); engine.endScrape(); gesture.current = null; setContact(false); refresh(); persist(); }
+      if (gesture.current) { gesture.current.squeeze?.finish(performance.now()); clearTimeout(gesture.current.grip?.timer); engine.endScrape(); if (gesture.current.grip) engine.turn(0); gesture.current = null; setContact(false); refresh(); persist(); }
       dispensingTube.current?.cancel(); releaseUntil.current = 0; setCursor(null);
     };
     const onVisibility = () => { if (document.hidden) interrupt(); };
@@ -309,6 +309,8 @@ export function App() {
       if (event.pointerType === 'touch') setCursor(null);
     }
     clearTimeout(grip?.timer); current.engine.endScrape(); gesture.current = null; setContact(false);
+    // Every pull starts level, however the last one ended.
+    if (grip) current.engine.turn(0);
     // Lifting either finger lifts the card; the other one is let go too.
     for (const id of grip ? grip.fingers.keys() : [event.pointerId]) if (event.currentTarget.hasPointerCapture(id)) event.currentTarget.releasePointerCapture(id);
     refresh(); persist();
