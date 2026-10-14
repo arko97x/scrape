@@ -176,7 +176,6 @@
   :root[data-tablet] .studio-dock, :root[data-tablet] .dock-guidance { left: 75%; }
   :root[data-tablet] .studio-dock, :root[data-tablet] .dock-settings { max-width: calc(50vw - 32px - env(safe-area-inset-right, 0px)); }
 }
-}
 @media (prefers-reduced-motion: reduce) {
   .dock-tool .dock-object { transition: none; }
   .dock-tool:hover:not(:active):not(:disabled) .dock-object { transform: translateX(-50%) translateY(3px); }
