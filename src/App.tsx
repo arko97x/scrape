@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Download, Plus } from 'lucide-react';
+import { Download, Images, Plus } from 'lucide-react';
 import { PaintEngine, PaintHistory, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
@@ -333,6 +333,7 @@ export function App() {
     <header className="header">
       <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}><Wordmark label=""/></a>
       <div className="header-actions">
+        <a className="new-sheet gallery-link" href="/gallery/" aria-label="Gallery"><Images className="ui-icon" aria-hidden="true"/><span>Gallery</span></a>
         <button className="new-sheet" aria-label="New sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
         <button className="export-button" aria-label={exporting ? 'Saving picture…' : 'Save as a picture'} title="Save as a picture" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/></button>
       </div>

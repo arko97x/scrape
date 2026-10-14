@@ -20,7 +20,7 @@
 .dock-studio .header-caption { padding-top: 6px; font-size: 11px; }
 .dock-studio .header-actions { gap: 20px; }
 .dock-studio .export-button { border-radius: var(--ui-radius); }
-.dock-studio .new-sheet { min-height: 44px; }
+.dock-studio .new-sheet { min-height: 44px; border-radius: var(--ui-radius); }
 .dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--dock-under)); padding: 24px 0; container-type: size; }
 /* The paper is 4:5 and sized by the space the workspace actually has, not by
    a viewport unit: browsers disagree about those while toolbars come and go. */
