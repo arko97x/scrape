@@ -14,11 +14,11 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .wordmark { font-family: 'DynaPuff', 'Nunito', sans-serif; font-weight: 600; color: var(--ink); text-decoration: none; font-size: 52px; line-height: 1; letter-spacing: -1px; }
 .brand-dot { color: var(--coral); }
 .header-caption { color: #78806f; font-size: 12px; padding-top: 10px; letter-spacing: .3px; }
-.header-actions { margin-left: auto; display: flex; align-items: center; gap: 24px; font-size: 12px; }
+.header-actions { margin-left: auto; display: flex; align-items: center; gap: 24px; font-size: 14px; }
 .ui-icon { width: 19px; height: 19px; flex-shrink: 0; stroke-width: 1.5; }
 .new-sheet svg, .export-button svg { width: 19px; height: 19px; }
 .new-sheet:disabled { opacity: .28; }
-.new-sheet, .export-button { display: flex; align-items: center; gap: 9px; }
+.new-sheet, .export-button { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
 .export-button { padding: 12px 18px; border: 1px solid #596650; border-radius: 4px; background: #eee9dc66; }
 .export-button:disabled { opacity: .4; }
 .eyebrow { font-size: 9px; letter-spacing: 1.9px; font-weight: 600; color: #7c826f; }
@@ -84,8 +84,7 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'Nunito', sans-
   .header { min-height: 84px; gap: 15px; }
   .wordmark { font-size: 43px; }
   .header-actions { gap: 10px; }
-  .new-sheet { font-size: 11px; }
-  .export-button { padding: 10px 12px; font-size: 11px; }
+  .export-button { padding: 10px 12px; }
   .paper-area { grid-column: 1; grid-row: 1; }
 }
 @media (max-width: 560px) {
@@ -93,8 +92,8 @@ kbd { border: 1px solid #8e967c44; border-radius: 3px; font: 9px 'Nunito', sans-
   .header { min-height: 75px; }
   .wordmark { font-size: 38px; }
   .new-sheet span { display: none; }
-  .header-actions { gap: 3px; }
-  .export-button { font-size: 10px; gap: 4px; padding: 10px 9px; }
+  .header-actions { gap: 3px; font-size: 12px; }
+  .export-button { gap: 4px; padding: 10px 9px; }
   .paper-area { width: 100%; }
   .save-status { margin-left: 0; flex-basis: 100%; text-align: center; padding-top: 5px; }
   kbd { display: none; }

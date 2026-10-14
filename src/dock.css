@@ -36,7 +36,7 @@
    padding and border below the button. */
 .studio-dock { --tab-rise: 30px; --tab-drop: calc(5px + var(--safe-bottom)); }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true]::before { clip-path: inset(0 round var(--ui-radius) var(--ui-radius) 0 0); box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3, 0 -2px 8px #26322712; }
-.dock-tool-name { position: absolute; left: 0; right: 0; top: calc(6px - var(--tab-rise)); font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: .2px; color: #344b39; text-align: center; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-out), transform 180ms var(--ease-out); }
+.dock-tool-name { position: absolute; left: 0; right: 0; top: calc(5px - var(--tab-rise)); font-size: 14px; line-height: 18px; font-weight: 600; letter-spacing: .2px; color: #344b39; text-align: center; white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity 120ms var(--ease-out), transform 180ms var(--ease-out); }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true] .dock-tool-name { opacity: 1; transform: translateY(0); transition-delay: 40ms; }
 .studio-dock[data-settings=closed] .dock-tool[aria-pressed=true] .dock-tip { bottom: calc(100% + 12px + var(--tab-rise)); }
 /* A fixed lower crop follows the dock's inner bottom edge. Extra space above
@@ -140,6 +140,7 @@
   .dock-choice { width: 40px; }
   .dock-choices { padding-right: 8px; gap: 2px; }
   .dock-guidance { font-size: 12px; }
+  .dock-tool-name { font-size: 12px; }
 }
 @media (max-width: 360px) {
   .dock-tool { width: 54px; }

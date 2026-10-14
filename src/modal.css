@@ -35,8 +35,8 @@
 .welcome-dock { position: absolute; left: 16.25%; width: 67.5%; top: 120%; height: 21.7%; background: #fffdf8; border: 1px solid #d5d9ce; border-bottom: 0; border-radius: 6px 6px 0 0; box-shadow: 0 1px 2px #2632270a, 0 8px 22px #26322712; }
 .welcome-slot { position: absolute; top: 0; bottom: 0; width: 22%; transform: translateX(-50%); clip-path: inset(-80% -20% 0 -20%); }
 .welcome-slot.scrape { width: 27%; }
-.welcome-tab { position: absolute; left: 4%; right: 4%; top: calc(-28 * var(--k)); bottom: 0; display: flex; justify-content: center; padding-top: calc(5 * var(--k)); border-radius: 6px 6px 0 0; background: #e2e7d9; box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3; opacity: 0; transform: translateY(calc(28 * var(--k))); transition: opacity 160ms var(--ease-out), transform 260ms var(--ease-out); }
-.welcome-tab span { font-size: calc(12 * var(--k)); line-height: 1.2; font-weight: 700; color: #344b39; white-space: nowrap; }
+.welcome-tab { position: absolute; left: 4%; right: 4%; top: calc(-28 * var(--k)); bottom: 0; display: flex; justify-content: center; padding-top: calc(4 * var(--k)); border-radius: 6px 6px 0 0; background: #e2e7d9; box-shadow: inset 1px 0 #cdd5c3, inset -1px 0 #cdd5c3, inset 0 1px #cdd5c3; opacity: 0; transform: translateY(calc(28 * var(--k))); transition: opacity 160ms var(--ease-out), transform 260ms var(--ease-out); }
+.welcome-tab span { font-size: calc(14 * var(--k)); line-height: 1.2; font-weight: 700; color: #344b39; white-space: nowrap; }
 .welcome-slot[data-armed=true] .welcome-tab { opacity: 1; transform: none; }
 .welcome-slot svg { position: absolute; left: 50%; }
 .welcome-slot .tube-art { width: calc(41.6 * var(--k)); height: calc(104 * var(--k)); bottom: calc(-34 * var(--k)); transform: translateX(-50%) rotate(180deg); }
