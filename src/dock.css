@@ -64,6 +64,9 @@
 .dock-tip[data-visible=true] { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 .dock-tip kbd { border: 0; color: #dbe0cf; font-size: 10px; margin-left: 8px; padding: 0; opacity: .8; }
 .dock-icon .dock-tip { bottom: calc(100% + 12px); }
+/* Settings controls take the same labels, closer since nothing rises above them. */
+.dock-settings .paint-swatch, .dock-settings .dock-choice, .dock-settings .dock-action { position: relative; }
+.dock-settings .dock-tip { bottom: calc(100% + 10px); }
 
 .dock-settings { position: absolute; bottom: calc(var(--dock-height) + var(--dock-gap) + var(--safe-bottom)); left: 50%; width: max-content; max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); height: var(--dock-height); border-radius: var(--ui-radius); opacity: 1; transform: translateX(-50%) translateY(0) scale(1); transform-origin: center bottom; transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out); }
 .dock-settings[data-open=false] { opacity: 0; transform: translateX(-50%) translateY(6px) scale(.98); pointer-events: none; }
@@ -73,11 +76,11 @@
 /* Bars size to their content; swatches keep a fixed rhythm instead of spreading out. */
 .dock-palette { display: flex; align-items: center; gap: 2px; height: 100%; }
 .paint-swatch { width: 48px; height: 48px; padding: 0; border-radius: var(--ui-radius); flex-shrink: 0; display: grid; place-items: center; }
-.paint-swatch > span { display: block; width: 32px; height: 32px; border: 1px solid #0002; border-radius: 50%; transition: transform 125ms var(--ease-out); }
-.paint-swatch[aria-pressed=true] > span { outline: 2px solid var(--ink); outline-offset: 3px; }
+.paint-swatch > .swatch-dot { display: block; width: 32px; height: 32px; border: 1px solid #0002; border-radius: 50%; transition: transform 125ms var(--ease-out); }
+.paint-swatch[aria-pressed=true] > .swatch-dot { outline: 2px solid var(--ink); outline-offset: 3px; }
 .paint-swatch:disabled { opacity: .45; }
 .paint-swatch:active:not(:disabled) { transform: none; }
-.paint-swatch:active:not(:disabled) > span { transform: scale(.95); }
+.paint-swatch:active:not(:disabled) > .swatch-dot { transform: scale(.95); }
 .dock-colour { position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: manipulation; flex-shrink: 0; }
 .custom-colour { --swatch: 32px; width: 44px; min-height: 44px; align-self: stretch; display: flex; align-items: center; justify-content: center; }
 .custom-colour > svg { width: var(--swatch); height: var(--swatch); stroke-width: 1.3; padding: calc(var(--swatch) / 8); border-radius: 50%; background: conic-gradient(#c55c43, #e5b84e, #7a8963, #649295, #d99092, #c55c43); color: #faf7ef; }
@@ -86,7 +89,7 @@
 /* Focus rings sit on the round swatch itself, matching the selected ring,
    rather than on the square hit area around it. */
 .paint-swatch:focus-visible { outline: none; }
-.paint-swatch:focus-visible > span { outline: 2px solid var(--coral); outline-offset: 3px; }
+.paint-swatch:focus-visible > .swatch-dot { outline: 2px solid var(--coral); outline-offset: 3px; }
 /* Chrome treats a clicked colour input as focus-visible, so an open picker
    gets the same ink ring as a selected swatch rather than the focus colour. */
 .custom-colour:focus-within > svg { outline: 2px solid var(--ink); outline-offset: 3px; }
@@ -110,7 +113,7 @@
   .dock-tool:hover:not(:disabled)::before { opacity: .55; }
   .dock-tool[aria-pressed=true]:hover::before { opacity: 1; }
   .dock-icon:hover:not(:disabled), .dock-action:hover:not(:active):not(:disabled), .dock-choice:hover:not(:disabled):not([aria-pressed=true]) { background: #edf2e7; }
-  .paint-swatch:hover:not(:active):not(:disabled) > span { transform: scale(1.06); }
+  .paint-swatch:hover:not(:active):not(:disabled) > .swatch-dot { transform: scale(1.06); }
 }
 @media (max-width: 900px) {
   .desk-meta { bottom: 210px; }
@@ -144,7 +147,7 @@
   .dock-icon { width: 28px; }
   .dock-history, .dock-divider { margin: 0 1px; }
   .paint-swatch { width: 36px; }
-  .paint-swatch > span { width: 28px; height: 28px; }
+  .paint-swatch > .swatch-dot { width: 28px; height: 28px; }
   .custom-colour { --swatch: 28px; width: 30px; }
   .turn-action .rotation-label { display: none; }
 }
