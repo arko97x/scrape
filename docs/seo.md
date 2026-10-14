@@ -36,11 +36,12 @@ What the search results reward, by term:
 - Fonts load from the page head rather than a CSS `@import`, which paints text
   sooner.
 
-## Next in the site: guides
+## Guides
 
 The studio is a canvas; search engines need words to rank. Two guide pages,
-plain HTML that loads instantly, each answering its search properly and ending
-with the studio:
+plain HTML with no JavaScript, each answer their search properly, are
+illustrated with paintings made in Scrape, and end in the studio. Both are in
+the sitemap, and About links to them:
 
 1. **/scrape-painting/** — what scrape painting is; materials (acrylics, heavy
    paper or canvas, an old card or squeegee); step by step; tips (fewer
@@ -49,7 +50,7 @@ with the studio:
 2. **/squeegee-painting/** — squeegee painting with kids as process art; what
    to use for small hands (washable paint, card stock, a cut-down squeegee or
    cardboard strip); how to set up for less mess; and the mess-free version for
-   rainy days, car rides and classrooms.
+   rainy days, waiting rooms and classrooms.
 
 Later, if they do well: ideas and colour palettes for scrape art, "scrape
 painting for beginners", and a gallery of paintings people choose to share.

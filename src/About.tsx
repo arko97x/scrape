@@ -17,6 +17,10 @@ export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: 
       <p>Arkoprabho Bhattacharjee</p>
     </section>
     <section className="about-section">
+      <h2>With real paint</h2>
+      <p>Two short guides: <a href="/scrape-painting/">how to do scrape painting</a>, and <a href="/squeegee-painting/">squeegee painting with kids</a>.</p>
+    </section>
+    <section className="about-section">
       <h2>Colophon</h2>
       <dl className="colophon">
         <div><dt>Paint</dt><dd>A 480 × 600 grid of wet paint, simulated on your device and lit with WebGL 2. It approximates acrylic and is tuned by eye.</dd></div>

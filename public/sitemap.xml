@@ -4,4 +4,12 @@
     <loc>https://scrape.arccc.co/</loc>
     <lastmod>2026-10-14</lastmod>
   </url>
+  <url>
+    <loc>https://scrape.arccc.co/scrape-painting/</loc>
+    <lastmod>2026-10-14</lastmod>
+  </url>
+  <url>
+    <loc>https://scrape.arccc.co/squeegee-painting/</loc>
+    <lastmod>2026-10-14</lastmod>
+  </url>
 </urlset>
