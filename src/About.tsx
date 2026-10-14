@@ -18,7 +18,7 @@ export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: 
     </section>
     <section className="about-section">
       <h2>With real paint</h2>
-      <p>Two short guides: <a href="/scrape-painting/">how to do scrape painting</a>, and <a href="/squeegee-painting/">squeegee painting with kids</a>.</p>
+      <p>Two short guides: <a href="/scrape-painting/">how to do scrape painting</a>, and <a href="/squeegee-painting/">squeegee painting with kids</a>. And a <a href="/gallery/">gallery</a> of paintings made here, with how each was done.</p>
     </section>
     <section className="about-section">
       <h2>Colophon</h2>

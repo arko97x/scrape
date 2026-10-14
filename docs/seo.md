@@ -52,8 +52,13 @@ the sitemap, and About links to them:
    cardboard strip); how to set up for less mess; and the mess-free version for
    rainy days, waiting rooms and classrooms.
 
-Later, if they do well: ideas and colour palettes for scrape art, "scrape
-painting for beginners", and a gallery of paintings people choose to share.
+3. **/gallery/** — a grid of scrape art painted in Scrape, each after a piece
+   shared online. `gallery/recipes.mjs` records every squeeze, pull and pen
+   line and credits the source; `gallery/paint.mjs` repaints them exactly, and
+   `gallery/build.mjs` writes the page from them.
+
+Later, if they do well: colour palettes for scrape art, "scrape painting for
+beginners", and paintings people choose to share.
 
 ## Off the site (the part that moves rankings most)
 

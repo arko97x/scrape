@@ -51,6 +51,17 @@ figcaption { margin-top: 12px; font-size: 15px; color: var(--muted); text-align:
 .g-footer { max-width: 1040px; margin: 0 auto; padding: 8px 24px 48px; display: flex; flex-wrap: wrap; gap: 10px 28px; font-size: 15px; font-weight: 700; color: var(--muted); }
 .g-footer a { color: var(--muted); }
 
+/* Gallery: the paintings as sheets of paper, three across. */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.g-sheets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 3vw, 36px); padding-top: 12px; }
+.g-sheet { display: block; border-radius: 4px; background: #f5f1e5; box-shadow: 0 1px 2px #4e443418, 0 12px 30px #4e443426; transition: transform 160ms cubic-bezier(.23, 1, .32, 1), box-shadow 160ms cubic-bezier(.23, 1, .32, 1); }
+.g-sheet img { border-radius: 4px; }
+.g-sheet:hover { transform: translateY(-3px); box-shadow: 0 2px 4px #4e443418, 0 18px 40px #4e443433; }
+.g-sheet:focus-visible { outline: 2px solid var(--coral); outline-offset: 4px; }
+@media (max-width: 900px) { .g-sheets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .g-sheets { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .g-sheet { transition: none; } .g-sheet:hover { transform: none; } }
+
 @media (max-width: 640px) {
   body { font-size: 17px; }
   .g-header { padding: 16px; }
