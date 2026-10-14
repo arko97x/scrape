@@ -4,8 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#e9e3d7" />
-    <meta name="description" content="A little studio for scrape painting. Squeeze some colour, pull a squeegee, and see what happens." />
-    <title>Scrape — a little paint playground</title>
+    <title>Scrape — free online scrape painting &amp; squeegee art</title>
+    <meta name="description" content="Squeeze paint and pull a squeegee card through it. Scrape is a free online scrape painting and squeegee art studio for kids and adults. No mess, no sign-up." />
+    <link rel="canonical" href="https://scrape.arccc.co/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Scrape" />
+    <meta property="og:url" content="https://scrape.arccc.co/" />
+    <meta property="og:title" content="Scrape — free online scrape painting &amp; squeegee art" />
+    <meta property="og:description" content="Squeeze paint, pull the card, watch the colours fold. A free scrape painting studio in your browser, for kids and grown-ups." />
+    <meta property="og:image" content="https://scrape.arccc.co/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Scrape wordmark beside a scrape painting: ribbons of yellow, red and pink paint pulled down from a row of dollops and swept round a curve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Scrape — free online scrape painting &amp; squeegee art" />
+    <meta name="twitter:description" content="Squeeze paint, pull the card, watch the colours fold. A free scrape painting studio in your browser, for kids and grown-ups." />
+    <meta name="twitter:image" content="https://scrape.arccc.co/og-image.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DynaPuff:wght@400..700&amp;family=Nunito:wght@400..800&amp;display=swap" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -20,9 +38,35 @@
         if (Math.min(screen.width, screen.height) >= 600) root.setAttribute('data-tablet', '');
       })();
     </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Scrape",
+        "url": "https://scrape.arccc.co/",
+        "description": "A free online scrape painting and squeegee art studio. Squeeze blobs of paint onto the paper, pull a scraper card or comb through them, and watch the colours fold and mix like real acrylic.",
+        "applicationCategory": "DesignApplication",
+        "applicationSubCategory": "Painting",
+        "operatingSystem": "Any; runs in a web browser",
+        "browserRequirements": "Requires WebGL 2",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "audience": { "@type": "PeopleAudience", "audienceType": "Kids and adults" },
+        "keywords": "scrape painting, scrape art, squeegee painting, squeegee art, online painting for kids, paint mixing, process art",
+        "featureList": ["Squeeze paint from a tube", "Pull a flat scraper card or a comb", "Turn the card with two fingers or by curving the drag", "Realistic pigment mixing", "Pen for drawing on top", "Undo and redo", "Save the painting as a picture", "Works on phones, tablets and computers"],
+        "image": "https://scrape.arccc.co/og-image.png",
+        "screenshot": "https://scrape.arccc.co/og-image.png",
+        "creator": { "@type": "Person", "name": "Arkoprabho Bhattacharjee" },
+        "inLanguage": "en"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Scrape — free online scrape painting &amp; squeegee art</h1>
+      <p>Scrape is a little studio for scrape painting in your browser. Squeeze blobs of paint onto the paper, pull a scraper card or a comb through them, and watch the colours fold together. It is free, for kids and adults, with no sign-up. Turn on JavaScript to start painting.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

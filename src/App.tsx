@@ -329,6 +329,7 @@ export function App() {
   };
 
   return <main className="studio dock-studio" data-keyboard={keyboardMotion} onPointerDownCapture={() => setKeyboardMotion(false)}>
+    <h1 className="sr-only">Scrape: a free online scrape painting and squeegee art studio</h1>
     <header className="header">
       <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}><Wordmark label=""/></a>
       <div className="header-actions">
