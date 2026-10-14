@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ArrowDownRight, Download, Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import { PaintEngine, PaintHistory, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
@@ -341,7 +341,7 @@ export function App() {
         <div className={`paper-host ${ready ? 'ready' : ''}`}>
           <div className="paper-surface"><canvas ref={canvas} className="painting" aria-label="Painting paper. Select a colour, hold to squeeze a blob, or drag to draw a bead. Select the scraper and drag to scrape, or select the pen to draw clean lines." tabIndex={0} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd} onPointerLeave={() => { if (!gesture.current) { hoverPoint.current = null; if (performance.now() < releaseUntil.current) hideAfterRelease.current = true; else setCursor(null); } }}/></div>
           <div className="border-tape tape-top" aria-hidden="true"/><div className="border-tape tape-bottom" aria-hidden="true"/><div className="border-tape tape-left" aria-hidden="true"/><div className="border-tape tape-right" aria-hidden="true"/>
-          {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true"><span>nothing precious.</span><span>just play.</span><ArrowDownRight className="ui-icon" aria-hidden="true"/></div>}
+          {!hasPaint && !contact && ready && <div className="paper-invitation" aria-hidden="true">Make art!</div>}
           {cursor && ready && <div className={`tool-cursor ${tool} ${contact ? 'touching' : 'lifted'}`} style={{ left: `${cursor.x / W * 100}%`, top: `${cursor.y / H * 100}%`, width: tool === 'scrape' ? `${bladeWidth / W * 100 * squeegeeWidthScale}%` : undefined, '--blade-angle': `${angle}deg`, '--squeegee-anchor': squeegeeAnchor } as React.CSSProperties} aria-hidden="true">{tool === 'scrape' ? <Squeegee paint={carriedPaint} pose="working" blade={blade}/> : tool === 'pen' ? <Pen colour={penColour}/> : <DispensingTube ref={dispensingTube} colour={paint} wet={wetColours.current.has(paint)}/>}</div>}
           {!ready && !error && <div className="loading-paper">Getting your paper ready…</div>}
         </div>

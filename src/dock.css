@@ -15,7 +15,7 @@
 .dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--safe-bottom)); padding: 24px 0; }
 .dock-studio .paper-area { width: 100%; }
 .dock-studio .paper-host { width: min(calc(100% - 60px), calc((100dvh - var(--desk-header) - var(--desk-controls) - 48px - env(safe-area-inset-top, 0px) - var(--safe-bottom)) * .8)); }
-.dock-studio .paper-invitation { font-size: clamp(23px, 3vw, 32px); }
+.dock-studio .paper-invitation { font-size: clamp(30px, 4.2vw, 44px); }
 .dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 20px + var(--safe-bottom)); transform: translateX(-50%); font-size: 14px; font-weight: 600; color: #6b7462; white-space: nowrap; pointer-events: none; }
 .desk-meta { position: fixed; right: 32px; bottom: calc(24px + var(--safe-bottom)); font-size: 10px; color: #78806f; }
 .dock-studio .header-actions button, .dock-studio .error-message, .dock-studio kbd { border-radius: var(--ui-radius); }

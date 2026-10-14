@@ -39,8 +39,7 @@ h1 { font: 25px/1.1 'DynaPuff', 'Nunito', sans-serif; font-weight: 500; letter-s
 .tape-left, .tape-right { top: -2.5%; height: 105%; width: 7.5%; }
 .tape-left { left: -3%; top: -4.3%; height: 108%; transform: rotate(.2deg); }
 .tape-right { right: -3%; top: -5%; height: 109%; transform: rotate(-.25deg); }
-.paper-invitation { position: absolute; top: 40%; left: 0; right: 0; display: flex; align-items: center; flex-direction: column; pointer-events: none; color: #aaa58c; font: 30px/1.25 'DynaPuff', 'Nunito', sans-serif; transform: rotate(-5deg); opacity: .7; }
-.paper-invitation .ui-icon { margin: 15px 0 0 55px; width: 40px; height: 40px; opacity: .6; }
+.paper-invitation { position: absolute; top: 50%; left: 0; right: 0; display: flex; align-items: center; flex-direction: column; pointer-events: none; color: #aaa58c; font: 30px/1.25 'DynaPuff', 'Nunito', sans-serif; transform: translateY(-50%) rotate(-5deg); opacity: .7; }
 .tool-cursor { pointer-events: none; position: absolute; z-index: 3; will-change: left, top; }
 .tool-cursor.paint { width: 48px; transform: translate(-50%, -98.8%) rotate(-18deg); transform-origin: 50% 98.8%; }
 .tool-cursor.paint .tube-art { width: 100%; height: auto; }
