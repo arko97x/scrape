@@ -277,16 +277,15 @@ export function Welcome({ onClose }: { onClose: () => void }) {
     if (event.key === 'ArrowRight' && !last) setStep(step + 1);
     else if (event.key === 'ArrowLeft' && step > 0) setStep(step - 1);
   };
-  return <Modal id="welcome" label="How Scrape works" className="welcome" closeOnBackdrop={false} onClose={onClose}>
+  return <Modal id="welcome" label="How Scrape works" className="welcome" title={<span className="modal-mark"><Wordmark/></span>} closeOnBackdrop={false} onClose={onClose}>
     <div className="welcome-layout" onKeyDown={keys}>
-      <p className="welcome-hello"><span className="modal-mark"><Wordmark/></span></p>
       <Demo step={step} reduced={reduced} touch={touch}/>
       <div className="welcome-text" aria-live="polite">
         <p className="welcome-count">{step + 1} of {steps.length}</p>
         <h2>{steps[step].title}</h2>
         <p>{steps[step].body}</p>
       </div>
-      <div className="welcome-nav">
+      <div className="modal-actions welcome-nav">
         <div className="welcome-dots">{steps.map((item, i) => <button key={item.title} aria-label={`Step ${i + 1}: ${item.title}`} aria-current={i === step ? 'step' : undefined} onClick={() => setStep(i)}/>)}</div>
         {step > 0 && <button className="modal-secondary" onClick={() => setStep(step - 1)}>Back</button>}
         <button className="modal-primary" data-autofocus onClick={() => last ? onClose() : setStep(step + 1)}>{last ? 'Start painting' : 'Next'}</button>

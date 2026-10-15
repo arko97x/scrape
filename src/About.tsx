@@ -3,11 +3,8 @@ import { Wordmark } from './Wordmark';
 import './modal.css';
 
 export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: () => void }) {
-  return <Modal id="about-scrape" label="About Scrape" className="about" onClose={onClose}>
-    <header className="about-head">
-      <span className="modal-mark about-mark"><Wordmark/></span>
-      <p>A little paint playground for squeezing, scraping and happy accidents.</p>
-    </header>
+  return <Modal id="about-scrape" label="About Scrape" className="about" title={<span className="modal-mark"><Wordmark/></span>} onClose={onClose}>
+    <p className="about-intro">A little paint playground for squeezing, scraping and happy accidents.</p>
     <section className="about-section">
       <h2>Why it exists</h2>
       <p>I love watching scrape paintings come together. A few blobs of acrylic, one long pull of a card, and the colours fold into each other in ways nobody could plan. Real paint is messy and costly, and a finished canvas starts to feel precious. I wanted that same pull without any of that: a place where anyone, small or grown, can make something in a minute and then start again.</p>
@@ -30,7 +27,7 @@ export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: 
         <div><dt>Your painting</dt><dd>Saved in this browser only. Nothing is uploaded.</dd></div>
       </dl>
     </section>
-    <footer className="about-foot">
+    <footer className="modal-actions">
       <button className="modal-secondary" onClick={onWelcome}>How it works</button>
       <button className="modal-primary" data-autofocus onClick={onClose}>Back to painting</button>
     </footer>
