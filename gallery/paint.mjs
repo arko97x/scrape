@@ -8,7 +8,8 @@
 //
 // Uses the Chrome installed on this machine (set CHROME to its path if it
 // lives somewhere else). Each painting is saved to public/gallery/ as the
-// studio's full-size PNG, with a smaller WebP beside it for the gallery page.
+// studio's full-size PNG, signed "Studio", with a smaller WebP beside it for
+// the gallery page.
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -36,6 +37,19 @@ async function thumb(id) {
   }, png);
   fs.writeFileSync(path.join(out, `${id}.webp`), Buffer.from(webp, 'base64'));
   await page.close();
+}
+// The studio's own paintings are signed "Studio", the way a visitor's are
+// signed with their name.
+async function sign(page, id) {
+  const file = path.join(out, `${id}.png`);
+  const signed = await page.evaluate(async data => {
+    const { signPainting } = await import('/src/signature.ts');
+    const blob = await signPainting(await (await fetch(`data:image/png;base64,${data}`)).blob(), 'Studio');
+    const bytes = new Uint8Array(await blob.arrayBuffer()); let text = '';
+    for (let i = 0; i < bytes.length; i += 32768) text += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    return btoa(text);
+  }, fs.readFileSync(file).toString('base64'));
+  fs.writeFileSync(file, Buffer.from(signed, 'base64'));
 }
 for (const recipe of recipes.filter(r => !only || r.id === only)) {
   if (thumbsOnly) { await thumb(recipe.id); console.log('preview', recipe.id); continue; }
@@ -92,6 +106,7 @@ for (const recipe of recipes.filter(r => !only || r.id === only)) {
   await page.mouse.move(2, 2); await page.waitForTimeout(400);
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('.export-button').click()]);
   await download.saveAs(path.join(out, `${recipe.id}.png`));
+  await sign(page, recipe.id);
   await thumb(recipe.id);
   console.log('painted', recipe.id);
   await page.close();
