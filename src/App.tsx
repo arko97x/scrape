@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { Download, Images, Plus } from 'lucide-react';
+import { Download, ImagePlus, Images, Plus } from 'lucide-react';
 import { PaintEngine, PaintHistory, type Point } from './engine';
 import { PaintRenderer } from './renderer';
 import { SqueezeStroke } from './input';
@@ -16,6 +16,8 @@ import { PathSteer, twoFingerPose } from './scrape-grip';
 import { Welcome } from './Welcome';
 import { About } from './About';
 import { Wordmark } from './Wordmark';
+import { PublishPainting } from './PublishPainting';
+import './header.css';
 
 const W = 480, H = 600;
 const WELCOMED = 'scrape:welcomed';
@@ -61,6 +63,7 @@ export function App() {
   const [contact, setContact] = useState(false);
   const [carriedPaint, setCarriedPaint] = useState<BladePaintBand[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [hasPaint, setHasPaint] = useState(false);
   const [credits, setCredits] = useState(false);
   const [welcome, setWelcome] = useState(() => !welcomed());
@@ -331,11 +334,12 @@ export function App() {
   return <main className="studio dock-studio" data-keyboard={keyboardMotion} onPointerDownCapture={() => setKeyboardMotion(false)}>
     <h1 className="sr-only">Scrape: a free online scrape painting and squeegee art studio</h1>
     <header className="header">
-      <a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}><Wordmark label=""/></a>
-      <div className="header-actions">
-        <a className="new-sheet gallery-link" href="/gallery/" aria-label="Gallery"><Images className="ui-icon" aria-hidden="true"/><span>Gallery</span></a>
-        <button className="new-sheet" aria-label="New sheet" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New sheet</span></button>
-        <button className="export-button" aria-label={exporting ? 'Saving picture…' : 'Save as a picture'} title="Save as a picture" disabled={!ready || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/></button>
+      <nav className="studio-navigation" aria-label="Studio navigation"><a className="wordmark" href="#" aria-label="Scrape studio" onClick={event => event.preventDefault()}><Wordmark label=""/></a>
+        <a className="gallery-link" href="/gallery/" aria-label="Gallery"><Images className="ui-icon" aria-hidden="true"/><span>Gallery</span></a></nav>
+      <div className="header-actions" role="group" aria-label="Painting actions">
+        <button className="new-sheet" aria-label="New painting" title="New painting" disabled={!hasPaint || contact || !ready} onClick={() => { const current = runtime.current; if (current) { cancelRelease(); current.history.checkpoint(); current.engine.clear(); refresh(); persist(); } }}><Plus className="ui-icon" aria-hidden="true"/><span>New painting</span></button>
+        <button className="export-button" aria-label={exporting ? 'Downloading…' : 'Download PNG'} title="Download PNG" disabled={!ready || !hasPaint || exporting || contact} onClick={exportPainting}><Download className="ui-icon" aria-hidden="true"/><span>PNG</span></button>
+        <button className="publish-button" disabled={!ready || !hasPaint || contact || exporting} onClick={() => setPublishing(true)}><ImagePlus className="ui-icon" aria-hidden="true"/><span>Add to gallery</span></button>
       </div>
     </header>
 
@@ -359,6 +363,7 @@ export function App() {
       undo={historyState.undo} redo={historyState.redo} onHistory={historyAction}
       onAbout={() => setCredits(true)}/>
     {storageWarning && <div className="desk-meta"><div className="save-status" role="status">Export to keep this painting</div></div>}
+    {publishing && <PublishPainting capture={async () => { const current = runtime.current; if (!current) throw new Error('Your painting is not ready yet.'); current.renderer.render(); return current.renderer.exportPNG(); }} onClose={() => setPublishing(false)}/>}
     {credits && <About onClose={() => setCredits(false)} onWelcome={() => { setCredits(false); setWelcome(true); }}/>}
     {welcome && <Welcome onClose={() => { setWelcome(false); try { localStorage.setItem(WELCOMED, '1'); } catch { /* Shows again next visit. */ } }}/>}
     {error && <div className="error-message" role="alert">{error}</div>}

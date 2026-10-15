@@ -2,3 +2,8 @@ node_modules/
 dist/
 .DS_Store
 *.local
+
+# Development gallery and local service credentials
+.env
+.env.*
+!.env.example

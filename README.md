@@ -77,3 +77,42 @@ Paint has a finite volume and a height field. The blade picks up paint, moves it
 Paint transport runs on the CPU at 480 × 600; WebGL 2 shades the paper, paint height, and edge ridges. Undo includes paint carried on the blade. The studio saves locally in IndexedDB and exports at 960 × 1200. The border mask is fixed; additional tape placement remains a future checkpoint.
 
 Mixbox © Secret Weapons supplies pigment mixing under CC BY-NC 4.0. This prototype is non-commercial; commercial use requires revisiting that dependency's licence. Attribution is also available from the info button in the studio dock.
+
+## Public gallery
+
+The studio’s **Add to gallery** opens a PNG preview with an optional artist name
+(60 characters), signed into the painting's bottom-right corner in Mrs Saint
+Delafield (`src/signature.ts`, font in `public/fonts/`); with no name it stays
+unsigned. Only **Publish painting** uploads it, and publishing leaves the current
+painting in the studio. The gallery shows submissions immediately, ahead of the
+studio's own paintings, which `gallery/paint.mjs` signs "Studio".
+
+### Local testing
+
+`npm run dev` serves the same gallery API using the ignored `gallery.local/` folder.
+Additions survive server restarts and are visible to other devices using that dev
+server. The UI labels this as a local preview; nothing is sent to Vercel.
+`vite preview` previews static production assets only, without the API.
+
+### Vercel setup
+
+Create a **public Vercel Blob store** in the project's Storage tab, connect it to
+the appropriate Production / Preview environments, and redeploy. The SDK uses
+Vercel's managed Blob credentials (`BLOB_STORE_ID` and OIDC), or a
+`BLOB_READ_WRITE_TOKEN` if your project uses token authentication. Never expose
+these as `VITE_` variables. No database is required.
+
+`api/gallery.ts` handles publication and listing. PNGs and immutable JSON credits
+are stored separately under `scrape-gallery/`. PNGs must be 960 × 1200 and under
+4 MB, keeping the multipart request within Vercel's 4.5 MB function limit. A
+submission ID and content digest make retries safe. Missing storage or failed
+uploads show an error and retain the form; there is no simulated success.
+
+This is a small, immediately public gallery without accounts or an approval queue.
+Listing scans Blob descriptors and fetches metadata for 24 paintings at a time;
+a larger gallery should move its index to a database. Server-side input checks
+and same-origin browser checks are included; configure production request rate
+limits in Vercel before opening submissions to heavy traffic. To remove a
+submission, delete its matching JSON entry and PNG from the Blob dashboard.
+
+See [Vercel Blob server uploads](https://vercel.com/docs/vercel-blob/server-upload).

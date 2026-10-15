@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { localGallery } from './server/local-gallery.ts';
 
 // Pages that live in their own folder, served at /<folder>/.
 const folders = ['scrape-painting', 'squeegee-painting', 'gallery'];
@@ -18,7 +19,7 @@ const trailingSlash: Plugin = {
 };
 
 export default defineConfig({
-  plugins: [trailingSlash],
+  plugins: [trailingSlash, localGallery()],
   build: {
     rolldownOptions: {
       input: {

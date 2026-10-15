@@ -1,0 +1,35 @@
+.dock-studio .header { gap: 24px; }
+.studio-navigation { display: flex; align-items: center; gap: 26px; }
+.studio-navigation .gallery-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px; color: #52614c; font-size: 14px; font-weight: 700; text-decoration: none; }
+.dock-studio .header-actions { gap: 8px; font-size: 14px; }
+.dock-studio .header-actions button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; width: auto; padding: 0 20px; border: 1px solid transparent; border-radius: 999px; font: 800 14px/1 'Nunito', sans-serif; white-space: nowrap; transition: background 140ms, border-color 140ms; touch-action: manipulation; }
+.dock-studio .header-actions .new-sheet { margin-right: 6px; color: #596650; }
+.dock-studio .header-actions .export-button { border-color: #b9bfaf; background: #fffdf859; }
+.dock-studio .header-actions .publish-button { border-color: #35483a; background: #35483a; color: #fffdf8; }
+.dock-studio .header-actions button:disabled { opacity: .32; cursor: default; }
+.dock-studio .header-actions .ui-icon, .studio-navigation .ui-icon { width: 17px; height: 17px; }
+@media (hover: hover) and (pointer: fine) {
+  .dock-studio .header-actions button:not(:disabled):hover { background: #dce2d3; }
+  .dock-studio .header-actions .publish-button:not(:disabled):hover { background: #263b2c; }
+  .studio-navigation .gallery-link:hover { color: #263b2c; }
+}
+@media (max-width: 1000px) {
+  .studio-navigation { gap: 16px; }
+  .dock-studio .header { gap: 12px; }
+  .dock-studio .header-actions { gap: 6px; }
+  .dock-studio .header-actions button { padding: 0 14px; }
+}
+@media (max-width: 760px) {
+  .dock-studio .header-actions .new-sheet span { display: none; }
+  .dock-studio .header-actions .new-sheet { width: 44px; padding: 0; margin-right: 0; }
+}
+@media (max-width: 600px) {
+  .dock-studio .header { flex-wrap: wrap; gap: 6px; padding: 12px 0 10px; }
+  .studio-navigation { flex: 1 0 100%; justify-content: space-between; }
+  .dock-studio .header-actions { width: 100%; margin-left: 0; gap: 8px; }
+  .dock-studio .header-actions .export-button span { display: inline; }
+  .dock-studio .header-actions .new-sheet { width: 44px; padding: 0; }
+  .dock-studio .header-actions button { padding: 0 12px; min-height: 44px; gap: 6px; }
+  .dock-studio .header-actions .publish-button { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .dock-studio .header-actions button { transition: none; } }

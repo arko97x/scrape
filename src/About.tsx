@@ -24,7 +24,7 @@ export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: 
         <div><dt>Mixing</dt><dd><a href="https://scrtwpns.com/mixbox" target="_blank" rel="noreferrer">Mixbox</a>, © Secret Weapons, under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a>. Scrape is non-commercial.</dd></div>
         <div><dt>Type</dt><dd>DynaPuff and Nunito, from Google Fonts.</dd></div>
         <div><dt>Built with</dt><dd>React, Vite and Lucide icons.</dd></div>
-        <div><dt>Your painting</dt><dd>Saved in this browser only. Nothing is uploaded.</dd></div>
+        <div><dt>Your painting</dt><dd>Your current painting stays in this browser. A copy is uploaded only when you choose to publish it to the gallery.</dd></div>
       </dl>
     </section>
     <footer className="modal-actions">

@@ -88,13 +88,15 @@ ${JSON.stringify(data, null, 2).replace(/^/gm, '      ')}
     <!-- Written by gallery/build.mjs from gallery/recipes.mjs; edit those, not this. -->
     <header class="g-header">
       <a class="g-logo" href="/"><img src="/brand/logo/wordmark.svg" alt="Scrape" width="162" height="37" /></a>
-      <a class="g-cta" href="/">Open the studio</a>
+      <a class="g-cta" href="/">Make a painting</a>
     </header>
     <main class="g-page">
       <h1 class="sr-only">Scrape art gallery</h1>
-      <div class="g-sheets">${sheets}
+      <div class="g-sheets">
+        <div id="community-gallery"></div>${sheets}
       </div>
     </main>
+    <script type="module" src="/src/gallery.tsx"></script>
   </body>
 </html>
 `;
