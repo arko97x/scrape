@@ -23,9 +23,11 @@
 .dock-studio .new-sheet { min-height: 44px; border-radius: var(--ui-radius); }
 .dock-studio .workspace { display: flex; justify-content: center; align-items: center; width: 100%; max-width: none; min-height: 0; flex: 1; margin: 0 0 calc(var(--desk-controls) + var(--dock-under)); padding: 24px 0; container-type: size; }
 /* The paper is 4:5 and sized by the space the workspace actually has, not by
-   a viewport unit: browsers disagree about those while toolbars come and go. */
+   a viewport unit: browsers disagree about those while toolbars come and go.
+   73cqh rather than 80cqh (the full height) leaves room for the tape, which
+   overhangs the paper by about 5% above and 4% below. */
 .dock-studio .paper-area { width: 100%; }
-.dock-studio .paper-host { width: min(calc(100% - 60px), 80cqh); }
+.dock-studio .paper-host { width: min(calc(100% - 60px), 73cqh); }
 .dock-studio .paper-invitation { font-size: clamp(30px, 4.2vw, 44px); }
 .dock-guidance { position: fixed; left: 50%; bottom: calc(var(--desk-controls) - 20px + var(--dock-under)); transform: translateX(-50%); font-size: 14px; font-weight: 600; color: #6b7462; white-space: nowrap; pointer-events: none; }
 .desk-meta { position: fixed; right: 32px; bottom: calc(24px + var(--safe-bottom)); font-size: 10px; color: #78806f; }
@@ -146,7 +148,7 @@
   .dock-studio .header-actions { gap: 12px; }
   .dock-studio .new-sheet { width: 36px; justify-content: center; }
   .dock-studio .new-sheet span { display: none; }
-  .dock-studio .paper-host { width: min(calc(100% - 24px), 80cqh); }
+  .dock-studio .paper-host { width: min(calc(100% - 24px), 73cqh); }
   .dock-tool { width: 61px; }
   .dock-tool.dock-scrape { width: 78px; }
   .dock-scrape .dock-object { width: 62px; }
@@ -180,7 +182,7 @@
    the bottom of the right half instead of under the paper. */
 @media (orientation: landscape) and (min-width: 900px) {
   :root[data-tablet] .dock-studio .workspace { width: 50%; margin: 0 0 var(--safe-bottom); }
-  :root[data-tablet] .dock-studio .paper-host { width: min(calc(100% - 32px), 80cqh); }
+  :root[data-tablet] .dock-studio .paper-host { width: min(calc(100% - 32px), 73cqh); }
   :root[data-tablet] .studio-dock, :root[data-tablet] .dock-guidance { left: 75%; }
   :root[data-tablet] .studio-dock, :root[data-tablet] .dock-settings { max-width: calc(50vw - 32px - env(safe-area-inset-right, 0px)); }
 }
