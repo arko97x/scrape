@@ -10,7 +10,7 @@ img { max-width: 100%; height: auto; display: block; }
 
 .g-header { max-width: 1040px; margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .g-logo img { height: 36px; width: auto; }
-.g-cta, .g-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: var(--ink); color: #fffdf8; font-weight: 800; font-size: 16px; text-decoration: none; white-space: nowrap; }
+.g-cta, .g-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: var(--ink); color: #fffdf8; font-weight: 800; font-size: 14px; text-decoration: none; white-space: nowrap; }
 .g-cta:hover, .g-button:hover { background: #2a3a2e; color: #fffdf8; }
 
 .g-page { max-width: 1040px; margin: 0 auto; padding: 0 24px 64px; }
@@ -73,7 +73,7 @@ figcaption { margin-top: 12px; font-size: 15px; color: var(--muted); text-align:
   body { font-size: 17px; }
   .g-header { padding: 16px; }
   .g-logo img { height: 30px; }
-  .g-cta { padding: 0 16px; font-size: 15px; }
+  .g-cta { padding: 0 16px; }
   .g-page { padding: 0 12px 48px; }
   article { padding: 34px 20px 44px; border-radius: 14px; }
   .g-pair { grid-template-columns: 1fr; }
