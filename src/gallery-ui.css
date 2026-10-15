@@ -1,4 +1,5 @@
-.publish-dialog { width: min(720px, calc(100vw - 24px)); }
+/* .modal.publish-dialog: in the build this file can load before modal.css. */
+.modal.publish-dialog { width: min(720px, calc(100vw - 24px)); }
 .publish-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); gap: 28px; align-items: start; }
 .publish-preview { display: grid; place-items: center; aspect-ratio: 4/5; background: #ece7db; padding: 13px; box-shadow: inset 0 0 0 1px #6c756414; color: #65705e; font-size: 13px; }
 .publish-preview img { display: block; width: 100%; height: auto; box-shadow: 0 2px 7px #343e2926; }
