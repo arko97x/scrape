@@ -11,7 +11,7 @@ export function About({ onClose, onWelcome }: { onClose: () => void; onWelcome: 
     </section>
     <section className="about-section">
       <h2>Made by</h2>
-      <p>Arkoprabho Bhattacharjee</p>
+      <p><a href="https://www.arccc.co" target="_blank" rel="noopener">Arkoprabho Bhattacharjee</a></p>
     </section>
     <section className="about-section">
       <h2>With real paint</h2>
