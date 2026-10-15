@@ -30,7 +30,7 @@ const html = `<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#e9e3d7" />
     <title>Scrape art gallery: scrape painting ideas | Scrape</title>
-    <meta name="description" content="Rainbow arcs, combed squiggles, a blossom tree, an ocean and more: scrape art painted in Scrape, the free online scrape painting studio." />
+    <meta name="description" content="Rainbow arcs, combed squiggles, rainbow cats, an ocean and more: scrape art painted in Scrape, the free online scrape painting studio." />
     <link rel="canonical" href="${SITE}/gallery/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Scrape" />

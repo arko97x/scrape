@@ -22,13 +22,43 @@ const wave = (x0, x1, y, amp, waves, n = 60) => Array.from({ length: n + 1 }, (_
 const row = (y, dots, hold = 600) => dots.map(([colour, x, h]) => ({ squeeze: { colour, at: [x, y], hold: h ?? hold } }));
 // A column of dollops: [colour, y] pairs at x.
 const column = (x, dots, hold = 600) => dots.map(([colour, y, h]) => ({ squeeze: { colour, at: [x, y], hold: h ?? hold } }));
-// A small circle, for pen bubbles and blossoms.
+// A small circle, for pen bubbles.
 const ring = (cx, cy, r, n = 18) => arc(cx, cy, r, r * .8, 0, 360, n);
 const join = (...paths) => paths.flat();
 // A small filled dot for the pen: a tight spiral.
 const dot = (cx, cy, r = .01) => Array.from({ length: 25 }, (_, i) => { const a = i / 24 * Math.PI * 6, k = 1 - i / 24; return [cx + Math.cos(a) * r * k, cy + Math.sin(a) * r * k * .8]; });
 
-const ORANGE = '#e0873a', VIOLET = '#7b5d9e', BARK = '#6a4b36', SKY = '#9cc3cf', CREAM = '#f5f1e5';
+const ORANGE = '#e0873a', VIOLET = '#7b5d9e', SKY = '#9cc3cf', CREAM = '#f5f1e5';
+const PINK = '#e38bb5', PURPLE = '#9b6dc4', BLUE = '#5e97d6', LEMON = '#ecd04a', GREEN = '#8cc56a';
+
+// A cat: a row of one colour pulled straight down from its head to the
+// bottom of the paper, two small dollops above for ears, and a pen face.
+// `eyes` is 'open', 'closed' (happy arcs) or 'lashes'.
+function cat(cx, top, colour, eyes = 'open', bottom = .96) {
+  const fy = top + .085, pen = (path, width = 'thin') => ({ pen: { ink: 'dark', width, path } });
+  const eye = side => {
+    const x = cx + side * .036;
+    if (eyes === 'closed') return [pen(arc(x, fy + .004, .016, .012, 200, 340, 10))];
+    const out = [pen(dot(x, fy, .009), 'thick')];
+    if (eyes === 'lashes') out.push(pen(arc(x, fy, .02, .018, 210, 330, 10)), pen(line(x, fy - .018, x, fy - .028, 3)));
+    return out;
+  };
+  return [
+    // Ears first, above where the card will start, so the pull leaves them be.
+    { squeeze: { colour, at: [cx - .072, top - .03], hold: 240 } },
+    { squeeze: { colour, at: [cx + .072, top - .03], hold: 240 } },
+    ...row(top, [-.08, -.04, 0, .04, .08].map(dx => [colour, cx + dx]), 720),
+    { wipe: true },
+    { pull: { card: 'flat', steer: false, path: line(cx, top - .008, cx, bottom, 50) } },
+    // Ear centres, a nose, a mouth and three whiskers a side.
+    pen(join(line(cx - .084, top - .022, cx - .072, top - .042, 3), line(cx - .072, top - .042, cx - .06, top - .022, 3))),
+    pen(join(line(cx + .06, top - .022, cx + .072, top - .042, 3), line(cx + .072, top - .042, cx + .084, top - .022, 3))),
+    ...eye(-1), ...eye(1),
+    pen([[cx - .013, fy + .026], [cx + .013, fy + .026], [cx, fy + .04], [cx - .013, fy + .026]], 'thick'),
+    pen([[cx - .034, fy + .05], [cx - .017, fy + .062], [cx, fy + .044], [cx + .017, fy + .062], [cx + .034, fy + .05]]),
+    ...[-1, 1].flatMap(side => [0, 1, 2].map(k => pen(line(cx + side * .03, fy + .032 + k * .01, cx + side * .095, fy + .02 + k * .022, 4)))),
+  ];
+}
 
 export const recipes = [
   {
@@ -70,33 +100,6 @@ export const recipes = [
       { wipe: true },
       ...row(.24, [['Rose', .78], [ORANGE, .81], ['Butter', .84], ['Lake', .87], [VIOLET, .9]], 520),
       { pull: { card: 'flat', steer: false, path: line(.84, .2, .84, .76) } },
-    ],
-  },
-  {
-    id: 'blossom-tree',
-    title: 'Blossom tree',
-    inspiredBy: { name: 'The Education Hub: scrape painting with young children', url: 'https://theeducationhub.org.nz/?p=31215' },
-    note: 'A trunk pulled up from a row of browns, a crown of greens pulled outward in a fan from the top of the trunk, the card turned to face each way, then blossoms dotted on with the pen.',
-    how: [
-      "Squeezed five dollops in a row at the bottom, bark brown (#6a4b36), Ink, bark, Moss and bark, and pulled the flat card straight up for the trunk.",
-      "For the crown, five times over: wiped the card, squeezed three greens from Moss, Butter and Lake at the top of the trunk, turned the card to face outward (from 60° one way to 60° the other, in 15° steps) and pulled it out, so the five pulls fan out like branches.",
-      "Dotted eleven blossoms on with the thick pen in pink ink (#d97f93).",
-    ],
-    steps: [
-      ...row(.9, [[BARK, .44], ['Ink', .47, 450], [BARK, .5], ['Moss', .53, 450], [BARK, .56]], 600),
-      { pull: { card: 'flat', steer: false, path: line(.5, .95, .5, .44, 40) } },
-      // Five pulls fan out from the top of the trunk: up-left, up, up-right and the two between.
-      ...[-150, -120, -90, -60, -30].flatMap((direction, k) => {
-        const a = direction * Math.PI / 180, across = [-Math.sin(a), Math.cos(a)];
-        const start = [.5 + Math.cos(a) * .05, .44 + Math.sin(a) * .045];
-        const greens = [['Moss', 'Butter', 'Moss'], ['Lake', 'Moss', 'Butter'], ['Moss', 'Lake', 'Moss'], ['Butter', 'Moss', 'Lake'], ['Moss', 'Butter', 'Moss']][k];
-        return [
-          { wipe: true },
-          ...greens.map((colour, i) => ({ squeeze: { colour, at: [start[0] + across[0] * (i - 1) * .028, start[1] + across[1] * (i - 1) * .022], hold: i === 1 ? 420 : 600 } })),
-          { pull: { card: 'flat', angle: direction + 90, steer: false, path: line(start[0] - Math.cos(a) * .03, start[1] - Math.sin(a) * .025, start[0] + Math.cos(a) * .26, start[1] + Math.sin(a) * .22, 30) } },
-        ];
-      }),
-      ...[[.3, .3], [.36, .2], [.45, .13], [.55, .14], [.63, .21], [.7, .3], [.41, .27], [.58, .28], [.5, .22], [.33, .38], [.67, .39]].map(([x, y]) => ({ pen: { ink: '#d97f93', width: 'thick', path: dot(x, y) } })),
     ],
   },
   {
@@ -160,24 +163,6 @@ export const recipes = [
     ],
   },
   {
-    id: 'layered-bands',
-    title: 'Layered bands',
-    inspiredBy: { name: 'Gerhard Richter’s squeegee abstracts, as described by Tate', url: 'https://tate.org.uk/art/artists/gerhard-richter-1841/how-did-richter-make-his-paintings' },
-    note: 'Five bands pulled down side by side through rows of many colours, then one long pull across the middle with the card turned upright, dragging every band sideways.',
-    how: [
-      "Squeezed five rows of four dollops along the top, each row a different mix of Tomato, Ink, Butter, Lake, Rose, cream (#f5f1e5) and Moss.",
-      "Pulled the flat card straight down through each row, wiping it between pulls, for five bands side by side.",
-      "Squeezed a column of Butter, cream, Tomato and Ink at the left edge, turned the card upright and pulled it straight across the middle of every band.",
-      "No pen.",
-    ],
-    steps: [
-      ...[.16, .34, .52, .7, .86].flatMap((x, k) => row(.1, [[['Tomato', 'Ink', 'Butter', 'Lake', 'Rose'][k], x - .06], [['Butter', CREAM, 'Ink', 'Tomato', 'Moss'][k], x - .02], [['Ink', 'Lake', 'Rose', CREAM, 'Butter'][k], x + .02], [['Lake', 'Tomato', 'Moss', 'Butter', 'Ink'][k], x + .06]], 520)),
-      ...[.16, .34, .52, .7, .86].flatMap(x => [{ pull: { card: 'flat', steer: false, path: line(x, .06, x, .93) } }, { wipe: true }]),
-      ...column(.06, [['Butter', .44], [CREAM, .47, 400], ['Tomato', .5], ['Ink', .53, 420]], 560),
-      { pull: { card: 'flat', angle: 90, steer: false, path: line(.04, .485, .96, .485, 60) } },
-    ],
-  },
-  {
     id: 'sunset',
     title: 'Sunset hills',
     inspiredBy: { name: 'Fine Art Tutorials: sunset painting', url: 'https://finearttutorials.com/?p=12569' },
@@ -208,6 +193,25 @@ export const recipes = [
       // Two birds, each a pair of shallow arcs.
       { pen: { ink: 'dark', width: 'thin', path: join(arc(.25, .245, .025, .02, 200, 330, 8), arc(.3, .245, .025, .02, 210, 340, 8)) } },
       { pen: { ink: 'dark', width: 'thin', path: join(arc(.34, .205, .018, .015, 200, 330, 8), arc(.376, .205, .018, .015, 210, 340, 8)) } },
+    ],
+  },
+  {
+    id: 'rainbow-cats',
+    title: 'Rainbow cats',
+    inspiredBy: { name: 'A rainbow cats painting shared with us (source unknown)', url: null },
+    note: 'Five tall cats, each one row of a single colour pulled straight down from its head to the bottom of the paper, two small dollops for ears, and faces drawn with the pen. The front cats are pulled over the back ones, the card scraping the back paint away so each sits cleanly in front.',
+    how: [
+      "Painted the three back cats first, pink (#e38bb5), blue (#5e97d6) and lemon (#ecd04a): for each, two small dollops held 0.24 s for the ears, then a row of five dollops of the same colour held 0.72 s each across the head.",
+      "Wiped the card and pulled it straight down from the head to the bottom of the paper, holding Shift so it stayed level. The dollops' rounded tops became the head.",
+      "Painted the two front cats the same way, purple (#9b6dc4) and green (#8cc56a), pulled down over the back cats; the card scrapes the back paint away, so they sit cleanly in front.",
+      "Drew every face with the pen in dark ink: thin triangles in the ears, dot eyes with the thick nib (closed, smiling arcs for the blue cat and lashes for the lemon one), a thick triangle nose, a w-shaped mouth and three whiskers a side.",
+    ],
+    steps: [
+      ...cat(.17, .17, PINK, 'open'),
+      ...cat(.48, .27, BLUE, 'closed'),
+      ...cat(.81, .23, LEMON, 'lashes'),
+      ...cat(.29, .4, PURPLE, 'open'),
+      ...cat(.65, .56, GREEN, 'open'),
     ],
   },
 ];
