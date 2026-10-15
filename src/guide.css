@@ -51,16 +51,23 @@ figcaption { margin-top: 12px; font-size: 15px; color: var(--muted); text-align:
 .g-footer { max-width: 1040px; margin: 0 auto; padding: 8px 24px 48px; display: flex; flex-wrap: wrap; gap: 10px 28px; font-size: 15px; font-weight: 700; color: var(--muted); }
 .g-footer a { color: var(--muted); }
 
-/* Gallery: the paintings as sheets of paper, three across. */
+/* Gallery: the paintings as sheets of paper taped to the desk, three across.
+   Each sheet's edge, tilt and tape come from gallery/build.mjs. */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.g-sheets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 3vw, 36px); padding-top: 12px; }
-.g-sheet { display: block; border-radius: 4px; background: #f5f1e5; box-shadow: 0 1px 2px #4e443418, 0 12px 30px #4e443426; transition: transform 160ms cubic-bezier(.23, 1, .32, 1), box-shadow 160ms cubic-bezier(.23, 1, .32, 1); }
-.g-sheet img { border-radius: 4px; }
-.g-sheet:hover { transform: translateY(-3px); box-shadow: 0 2px 4px #4e443418, 0 18px 40px #4e443433; }
-.g-sheet:focus-visible { outline: 2px solid var(--coral); outline-offset: 4px; }
+.g-sheets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(28px, 4vw, 52px) clamp(20px, 3vw, 40px); padding-top: 28px; }
+/* The sheet lies flat on the desk: only a small, sharp shadow under its edge. */
+.g-sheet { position: relative; display: block; transform: rotate(var(--tilt, 0deg)); filter: drop-shadow(0 1px .5px #4e443430) drop-shadow(0 2px 2px #4e44341a); transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.g-paper { position: relative; display: block; background: #f5f1e5; }
+.g-paper img { display: block; width: 100%; height: auto; }
+/* Paper grain over the painting, as the studio's paper has. */
+.g-paper::after { content: ''; position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: .5; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .52 0 0 0 0 .44 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E"), repeating-linear-gradient(83deg, transparent 0 7px, #8a7f6208 7px 8px); }
+/* Masking tape across the top, the studio's tape in miniature. */
+.g-tape { position: absolute; z-index: 1; top: -2.4%; height: 7.5%; transform: translateX(-50%) rotate(var(--tape-tilt, 0deg)); background: #d7d4a7; opacity: .78; background-image: repeating-linear-gradient(5deg, transparent 0 2px, #fff2 2px 3px), repeating-linear-gradient(90deg, #a19e7405 0 3px, transparent 3px 8px); }
+.g-sheet:hover { transform: rotate(var(--tilt, 0deg)) translateY(-2px); }
+.g-sheet:focus-visible { outline: 2px solid var(--coral); outline-offset: 6px; }
 @media (max-width: 900px) { .g-sheets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .g-sheets { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .g-sheet { transition: none; } .g-sheet:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .g-sheet { transition: none; } .g-sheet:hover { transform: rotate(var(--tilt, 0deg)); } }
 
 @media (max-width: 640px) {
   body { font-size: 17px; }

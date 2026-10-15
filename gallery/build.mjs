@@ -11,8 +11,41 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SITE = 'https://scrape.arccc.co';
 const esc = text => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const sheets = recipes.map(r => `
-          <a class="g-sheet" href="/gallery/${r.id}.png"><img src="/gallery/${r.id}.webp" alt="${esc(r.title)}: ${esc(r.note)}" width="640" height="800" loading="lazy" /></a>`).join('');
+// Every sheet is cut, tilted and taped a little differently, but the same
+// way on every build: the randomness is seeded by the painting's id.
+function random(seed) {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return ((h ^= h >>> 16) >>> 0) / 4294967296; };
+}
+const n = v => +v.toFixed(2);
+// A paper edge: fibres up to ~1.8px deep, and the odd small nick.
+function paperEdge(rand) {
+  const depth = () => rand() < .06 ? 2 + rand() * 1.6 : .2 + rand() * 1.6;
+  const pts = [];
+  for (let t = 0; t < 100; t += 1.6 + rand() * 1.4) pts.push(`${n(t)}% ${n(depth())}px`);
+  for (let t = 0; t < 100; t += 1.4 + rand() * 1.2) pts.push(`calc(100% - ${n(depth())}px) ${n(t)}%`);
+  for (let t = 100; t > 0; t -= 1.6 + rand() * 1.4) pts.push(`${n(t)}% calc(100% - ${n(depth())}px)`);
+  for (let t = 100; t > 0; t -= 1.4 + rand() * 1.2) pts.push(`${n(depth())}px ${n(t)}%`);
+  return `polygon(${pts.join(', ')})`;
+}
+// A strip of masking tape: straight along its length, torn across each end.
+function tapeEdge(rand) {
+  const pts = [`${n(rand() * 3)}% 0%`, `${n(97 + rand() * 3)}% 0%`];
+  for (let t = 12; t < 100; t += 12 + rand() * 10) pts.push(`${n(94 + rand() * 6)}% ${n(t)}%`);
+  pts.push(`${n(97 + rand() * 3)}% 100%`, `${n(rand() * 3)}% 100%`);
+  for (let t = 88; t > 0; t -= 12 + rand() * 10) pts.push(`${n(rand() * 6)}% ${n(t)}%`);
+  return `polygon(${pts.join(', ')})`;
+}
+const sheets = recipes.map(r => {
+  const rand = random(r.id);
+  const tilt = n((rand() - .5) * 1.6), tapeTilt = n((rand() - .5) * 6), tapeX = n(44 + rand() * 12), tapeW = n(24 + rand() * 8);
+  return `
+          <a class="g-sheet" href="/gallery/${r.id}.png" style="--tilt: ${tilt}deg">
+            <span class="g-paper" style="clip-path: ${paperEdge(rand)}"><img src="/gallery/${r.id}.webp" alt="${esc(r.title)}: ${esc(r.note)}" width="640" height="800" loading="lazy" /></span>
+            <span class="g-tape" style="--tape-tilt: ${tapeTilt}deg; left: ${tapeX}%; width: ${tapeW}%; clip-path: ${tapeEdge(rand)}" aria-hidden="true"></span>
+          </a>`;
+}).join('');
 
 const data = {
   '@context': 'https://schema.org',
