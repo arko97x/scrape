@@ -9,7 +9,7 @@ a:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; border-r
 img { max-width: 100%; height: auto; display: block; }
 
 .g-header { max-width: 1040px; margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.g-logo img { height: 36px; width: auto; }
+.g-logo img { height: 36px; width: auto; transform: translateY(9.5%); } /* Optically centred, as .wordmark-art. */
 .g-cta, .g-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: var(--ink); color: #fffdf8; font-weight: 800; font-size: 14px; text-decoration: none; white-space: nowrap; }
 .g-cta:hover, .g-button:hover { background: #2a3a2e; color: #fffdf8; }
 

@@ -13,8 +13,10 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .studio { min-height: 100dvh; background: radial-gradient(ellipse at 52% 44%, #f1ecdf99, transparent 68%), radial-gradient(#52614c11 .65px, transparent .8px); background-size: auto, 7px 7px; padding: 0 clamp(20px, 4vw, 64px); }
 .header { min-height: 104px; display: flex; align-items: center; gap: 25px; border-bottom: 1px solid #47533f24; }
 .wordmark { display: block; font-size: 52px; line-height: 1; text-decoration: none; }
-/* The outlined wordmark is cropped to its letters: .853em tall matches DynaPuff set at 1em. */
-.wordmark-art { display: block; height: .853em; width: auto; }
+/* The outlined wordmark is cropped to its letters: .853em tall matches DynaPuff set at 1em.
+   Its letters fill the top three quarters and only the p's tail the rest, so it
+   is lowered by 9.5% of its height to look centred beside buttons and text. */
+.wordmark-art { display: block; height: .853em; width: auto; transform: translateY(9.5%); }
 .header-caption { color: #78806f; font-size: 12px; padding-top: 10px; letter-spacing: .3px; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 24px; font-size: 14px; }
 .ui-icon { width: 19px; height: 19px; flex-shrink: 0; stroke-width: 1.5; }
